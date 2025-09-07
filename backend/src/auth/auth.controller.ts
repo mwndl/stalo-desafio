@@ -2,12 +2,13 @@ import { Controller, Post, Get, Body, UseGuards, Request } from '@nestjs/common'
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
+import { RegisterDto } from './dto/register.dto';
 import { AuthResponseDto, UserDto } from './dto/auth-response.dto';
 import { JwtAuthGuard } from './jwt-auth.guard';
 import { User } from '../entities/user.entity';
 
 @ApiTags('auth')
-@Controller('auth')
+@Controller('v1/auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
@@ -39,6 +40,48 @@ export class AuthController {
   })
   async login(@Body() loginDto: LoginDto): Promise<AuthResponseDto> {
     return this.authService.login(loginDto);
+  }
+
+  @Post('register')
+  @ApiOperation({
+    summary: 'Registrar novo usuário',
+    description: 'Cria uma nova conta de usuário e retorna um token JWT',
+  })
+  @ApiResponse({
+    status: 201,
+    description: 'Usuário registrado com sucesso',
+    type: AuthResponseDto,
+  })
+  @ApiResponse({
+    status: 409,
+    description: 'Email já está em uso',
+    schema: {
+      type: 'object',
+      properties: {
+        message: { type: 'string', example: 'Email já está em uso' },
+        error: { type: 'string', example: 'Conflict' },
+        statusCode: { type: 'number', example: 409 },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Dados de entrada inválidos',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Tenant não encontrado',
+    schema: {
+      type: 'object',
+      properties: {
+        message: { type: 'string', example: 'Tenant não encontrado' },
+        error: { type: 'string', example: 'Not Found' },
+        statusCode: { type: 'number', example: 404 },
+      },
+    },
+  })
+  async register(@Body() registerDto: RegisterDto): Promise<AuthResponseDto> {
+    return this.authService.register(registerDto);
   }
 
   @Get('me')
