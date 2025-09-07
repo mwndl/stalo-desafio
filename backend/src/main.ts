@@ -1,6 +1,7 @@
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import helmet from 'helmet';
 import { AppModule } from './app.module';
 
@@ -16,7 +17,7 @@ async function bootstrap() {
   
   // CORS
   app.enableCors({
-    origin: configService.get('CORS_ORIGIN', 'http://localhost:3000'),
+    origin: configService.get<string>('CORS_ORIGIN', 'http://localhost:3000'),
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
     allowedHeaders: ['Content-Type', 'Authorization'],
     credentials: true,
@@ -32,11 +33,47 @@ async function bootstrap() {
   // Prefixo global da API
   app.setGlobalPrefix('api');
   
-  const port = configService.get('PORT', 3001);
+  // Configuração do Swagger
+  const config = new DocumentBuilder()
+    .setTitle('Stalo API')
+    .setDescription('API para sistema de gestão financeira multi-tenant')
+    .setVersion('1.0')
+    .addBearerAuth(
+      {
+        type: 'http',
+        scheme: 'bearer',
+        bearerFormat: 'JWT',
+        name: 'JWT',
+        description: 'Enter JWT token',
+        in: 'header',
+      },
+      'JWT-auth',
+    )
+    .addTag('auth', 'Endpoints de autenticação')
+    .addTag('health', 'Endpoints de saúde da aplicação')
+    .addTag('seed', 'Endpoints para popular o banco de dados')
+    .build();
+
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+  const document = SwaggerModule.createDocument(app, config);
+  
+  // Swagger UI
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-explicit-any
+  SwaggerModule.setup('api/docs', app, document, {
+    customSiteTitle: 'Stalo API Documentation',
+    customfavIcon: '/favicon.ico',
+    customCss: '.swagger-ui .topbar { display: none }',
+    swaggerOptions: {
+      persistAuthorization: true,
+    },
+  });
+  
+  const port = configService.get<number>('PORT', 3001);
   await app.listen(port);
   
-  console.log(`🚀 Application is running on: http://localhost:${port}`);
-  console.log(`📊 Health check: http://localhost:${port}/api/health`);
-  console.log(`🌍 Timezone: ${process.env.TZ}`);
+  console.log(`Application is running on: http://localhost:${port}`);
+  console.log(`Health check: http://localhost:${port}/api/health`);
+  console.log(`API Documentation: http://localhost:${port}/api/docs`);
+  console.log(`Timezone: ${process.env.TZ}`);
 }
-bootstrap();
+void bootstrap();
