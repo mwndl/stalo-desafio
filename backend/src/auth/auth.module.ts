@@ -8,10 +8,11 @@ import { AuthService } from './auth.service';
 import { JwtStrategy } from './jwt.strategy';
 import { User } from '../entities/user.entity';
 import { Tenant } from '../entities/tenant.entity';
+import { RefreshToken } from '../entities/refresh-token.entity';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([User, Tenant]),
+    TypeOrmModule.forFeature([User, Tenant, RefreshToken]),
     PassportModule,
     JwtModule.registerAsync({
       imports: [ConfigModule],

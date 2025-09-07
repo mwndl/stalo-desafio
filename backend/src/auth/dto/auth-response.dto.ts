@@ -28,10 +28,16 @@ export class UserDto {
 
 export class AuthResponseDto {
   @ApiProperty({
-    description: 'Token JWT para autenticação',
+    description: 'Token JWT para autenticação (válido por 15 minutos)',
     example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
   })
   access_token: string;
+
+  @ApiProperty({
+    description: 'Refresh token para renovar o access token (válido por 7 dias)',
+    example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
+  })
+  refresh_token: string;
 
   @ApiProperty({
     description: 'Dados do usuário autenticado',

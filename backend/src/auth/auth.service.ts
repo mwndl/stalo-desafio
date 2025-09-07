@@ -4,10 +4,13 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { User } from '../entities/user.entity';
 import { Tenant } from '../entities/tenant.entity';
+import { RefreshToken } from '../entities/refresh-token.entity';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
 import { AuthResponseDto } from './dto/auth-response.dto';
+import { RefreshTokenDto, RefreshResponseDto } from './dto/refresh-token.dto';
 import * as bcrypt from 'bcryptjs';
+import * as crypto from 'crypto';
 
 @Injectable()
 export class AuthService {
@@ -16,6 +19,8 @@ export class AuthService {
     private userRepository: Repository<User>,
     @InjectRepository(Tenant)
     private tenantRepository: Repository<Tenant>,
+    @InjectRepository(RefreshToken)
+    private refreshTokenRepository: Repository<RefreshToken>,
     private jwtService: JwtService,
   ) {}
 
@@ -38,14 +43,12 @@ export class AuthService {
       throw new UnauthorizedException('Credenciais inválidas');
     }
 
-    const payload = {
-      sub: user.id,
-      email: user.email,
-      tenantId: user.tenantId,
-    };
+    // Gerar tokens
+    const { accessToken, refreshToken } = await this.generateTokens(user);
 
     return {
-      access_token: this.jwtService.sign(payload),
+      access_token: accessToken,
+      refresh_token: refreshToken,
       user: {
         id: user.id,
         email: user.email,
@@ -88,15 +91,12 @@ export class AuthService {
 
     const savedUser = await this.userRepository.save(user);
 
-    // Gerar token JWT
-    const payload = {
-      sub: savedUser.id,
-      email: savedUser.email,
-      tenantId: savedUser.tenantId,
-    };
+    // Gerar tokens
+    const { accessToken, refreshToken } = await this.generateTokens(savedUser);
 
     return {
-      access_token: this.jwtService.sign(payload),
+      access_token: accessToken,
+      refresh_token: refreshToken,
       user: {
         id: savedUser.id,
         email: savedUser.email,
@@ -117,5 +117,86 @@ export class AuthService {
     }
 
     return user;
+  }
+
+  private async generateTokens(user: User): Promise<{ accessToken: string; refreshToken: string }> {
+    // Gerar access token (15 minutos)
+    const accessPayload = {
+      sub: user.id,
+      email: user.email,
+      tenantId: user.tenantId,
+      type: 'access',
+    };
+    const accessToken = this.jwtService.sign(accessPayload, { expiresIn: '15m' });
+
+    // Gerar refresh token (7 dias)
+    const refreshTokenValue = crypto.randomBytes(64).toString('hex');
+    const refreshExpiresAt = new Date();
+    refreshExpiresAt.setDate(refreshExpiresAt.getDate() + 7);
+
+    // Salvar refresh token no banco
+    const refreshTokenEntity = this.refreshTokenRepository.create({
+      token: refreshTokenValue,
+      userId: user.id,
+      expiresAt: refreshExpiresAt,
+      isActive: true,
+    });
+    await this.refreshTokenRepository.save(refreshTokenEntity);
+
+    return {
+      accessToken,
+      refreshToken: refreshTokenValue,
+    };
+  }
+
+  async refreshTokens(refreshTokenDto: RefreshTokenDto): Promise<RefreshResponseDto> {
+    const refreshToken = await this.refreshTokenRepository.findOne({
+      where: { 
+        token: refreshTokenDto.refresh_token,
+        isActive: true,
+      },
+      relations: ['user'],
+    });
+
+    if (!refreshToken || refreshToken.expiresAt < new Date()) {
+      throw new UnauthorizedException('Refresh token inválido ou expirado');
+    }
+
+    const user = refreshToken.user;
+    if (!user.isActive) {
+      throw new UnauthorizedException('Usuário inativo');
+    }
+
+    // Invalidar o refresh token atual
+    await this.refreshTokenRepository.update(refreshToken.id, { isActive: false });
+
+    // Gerar novos tokens
+    const { accessToken, refreshToken: newRefreshToken } = await this.generateTokens(user);
+
+    return {
+      access_token: accessToken,
+      refresh_token: newRefreshToken,
+    };
+  }
+
+  async logout(refreshTokenDto: RefreshTokenDto): Promise<{ message: string }> {
+    const refreshToken = await this.refreshTokenRepository.findOne({
+      where: { token: refreshTokenDto.refresh_token },
+    });
+
+    if (refreshToken) {
+      await this.refreshTokenRepository.update(refreshToken.id, { isActive: false });
+    }
+
+    return { message: 'Logout realizado com sucesso' };
+  }
+
+  async logoutAll(userId: string): Promise<{ message: string }> {
+    await this.refreshTokenRepository.update(
+      { userId, isActive: true },
+      { isActive: false }
+    );
+
+    return { message: 'Logout de todos os dispositivos realizado com sucesso' };
   }
 }
