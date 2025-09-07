@@ -11,6 +11,8 @@ import { Transaction } from './entities/transaction.entity';
 import { HealthModule } from './health/health.module';
 import { SeedModule } from './seed/seed.module';
 import { AuthModule } from './auth/auth.module';
+import { UsersModule } from './users/users.module';
+import { TransactionsModule } from './transactions/transactions.module';
 
 @Module({
   imports: [
@@ -33,6 +35,8 @@ import { AuthModule } from './auth/auth.module';
     HealthModule,
     SeedModule,
     AuthModule,
+    UsersModule,
+    TransactionsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

@@ -52,6 +52,9 @@ export class Transaction {
   @UpdateDateColumn()
   updatedAt: Date;
 
+  @Column({ nullable: true })
+  deletedAt: Date;
+
   @ManyToOne(() => Tenant, tenant => tenant.transactions)
   @JoinColumn({ name: 'tenantId' })
   tenant: Tenant;
