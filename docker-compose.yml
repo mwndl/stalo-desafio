@@ -1,4 +1,18 @@
 services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: stalo-postgres-prod
+    environment:
+      POSTGRES_DB: stalo_db
+      POSTGRES_USER: stalo_user
+      POSTGRES_PASSWORD: stalo_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - app-network
+
   frontend:
     build:
       context: ./frontend
@@ -9,6 +23,7 @@ services:
       - NODE_ENV=production
     depends_on:
       - backend
+      - postgres
     networks:
       - app-network
 
@@ -21,8 +36,17 @@ services:
     environment:
       - NODE_ENV=production
       - PORT=3001
+      - DATABASE_URL=postgresql://stalo_user:stalo_password@postgres:5432/stalo_db
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USERNAME=stalo_user
+      - DB_PASSWORD=stalo_password
+      - DB_DATABASE=stalo_db
     networks:
       - app-network
+
+volumes:
+  postgres_data:
 
 networks:
   app-network:

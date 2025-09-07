@@ -1,5 +1,5 @@
 # Dockerfile para desenvolvimento do Backend
-FROM node:18-alpine
+FROM node:20-alpine
 
 # Instalar pnpm
 RUN npm install -g pnpm
