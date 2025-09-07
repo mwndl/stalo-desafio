@@ -1,0 +1,22 @@
+# Dockerfile para desenvolvimento do Backend
+FROM node:18-alpine
+
+# Instalar pnpm
+RUN npm install -g pnpm
+
+WORKDIR /app
+
+# Copiar arquivos de dependências
+COPY package.json pnpm-lock.yaml* ./
+
+# Instalar dependências
+RUN pnpm install
+
+# Copiar código fonte
+COPY . .
+
+# Expor porta
+EXPOSE 3001
+
+# Comando para desenvolvimento
+CMD ["pnpm", "start:dev"]
