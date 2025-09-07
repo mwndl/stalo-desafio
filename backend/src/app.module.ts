@@ -6,7 +6,10 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { getDatabaseConfig } from './config/database.config';
 import { User } from './entities/user.entity';
+import { Tenant } from './entities/tenant.entity';
+import { Transaction } from './entities/transaction.entity';
 import { HealthModule } from './health/health.module';
+import { SeedModule } from './seed/seed.module';
 
 @Module({
   imports: [
@@ -19,7 +22,7 @@ import { HealthModule } from './health/health.module';
       useFactory: getDatabaseConfig,
       inject: [ConfigService],
     }),
-    TypeOrmModule.forFeature([User]),
+    TypeOrmModule.forFeature([User, Tenant, Transaction]),
     ThrottlerModule.forRoot([
       {
         ttl: 60000,
@@ -27,6 +30,7 @@ import { HealthModule } from './health/health.module';
       },
     ]),
     HealthModule,
+    SeedModule,
   ],
   controllers: [AppController],
   providers: [AppService],
