@@ -100,6 +100,69 @@ pnpm start:dev
 - `pnpm start:dev` - Inicia o servidor em modo desenvolvimento
 - `pnpm build` - Build para produção
 - `pnpm test` - Executa os testes
+- `pnpm seed` - Executa o seed do banco de dados
+
+## 🌱 Sistema de Seed
+
+O projeto inclui um sistema completo de seed para popular o banco de dados com dados de exemplo para desenvolvimento e testes.
+
+### Como Funciona
+
+O sistema de seed é composto por:
+
+- **SeedService**: Lógica principal de criação de dados
+- **SeedController**: Endpoint HTTP para executar o seed
+- **SeedRunner**: Script standalone para executar o seed via linha de comando
+- **SeedModule**: Módulo Nest.js que configura as dependências
+
+### Dados Criados
+
+O seed cria automaticamente:
+
+1. **3 Tenants** (empresas):
+   - TechCorp Solutions
+   - Green Energy Co
+   - Creative Agency
+
+2. **21 Usuários** (7 por tenant):
+   - Dados realistas com nomes e emails únicos por tenant
+   - Senhas padrão para desenvolvimento
+
+3. **Transações** (3-8 por usuário):
+   - Tipos: Income (40%) e Expense (60%)
+   - Valores aleatórios entre $10-$1010
+   - Categorias: Food, Transportation, Entertainment, Utilities, Shopping, Healthcare, Education
+   - Status aleatórios
+   - Datas dos últimos 90 dias
+
+### Executando o Seed
+
+**Via linha de comando:**
+```bash
+cd backend
+pnpm seed
+```
+
+**Via endpoint HTTP:**
+```bash
+curl -X POST http://localhost:3001/seed
+```
+
+### Segurança
+
+- O seed só funciona em modo desenvolvimento (`NODE_ENV=development`)
+- Limpa todos os dados existentes antes de criar novos
+- Respeita as constraints de foreign key durante a limpeza
+
+### Estrutura dos Arquivos
+
+```
+backend/src/seed/
+├── seed.service.ts      # Lógica principal
+├── seed.controller.ts   # Endpoint HTTP
+├── seed.module.ts       # Configuração do módulo
+└── seed-runner.ts       # Script standalone
+```
 
 ## 🐳 Docker
 
