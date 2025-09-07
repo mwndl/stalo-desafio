@@ -4,6 +4,7 @@ import { Repository } from 'typeorm';
 import { Tenant } from '../entities/tenant.entity';
 import { User } from '../entities/user.entity';
 import { Transaction, TransactionType, TransactionStatus } from '../entities/transaction.entity';
+import * as bcrypt from 'bcryptjs';
 
 @Injectable()
 export class SeedService {
@@ -116,10 +117,11 @@ export class SeedService {
 
     const users: User[] = [];
     for (const data of userData) {
+      const hashedPassword = await bcrypt.hash('password123', 10);
       const user = this.userRepository.create({
         ...data,
         tenantId: tenant.id,
-        password: 'hashed_password_123', // In real app, this would be properly hashed
+        password: hashedPassword,
       });
       const savedUser = await this.userRepository.save(user);
       users.push(savedUser);

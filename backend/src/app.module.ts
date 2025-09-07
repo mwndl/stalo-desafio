@@ -10,6 +10,7 @@ import { Tenant } from './entities/tenant.entity';
 import { Transaction } from './entities/transaction.entity';
 import { HealthModule } from './health/health.module';
 import { SeedModule } from './seed/seed.module';
+import { AuthModule } from './auth/auth.module';
 
 @Module({
   imports: [
@@ -31,6 +32,7 @@ import { SeedModule } from './seed/seed.module';
     ]),
     HealthModule,
     SeedModule,
+    AuthModule,
   ],
   controllers: [AppController],
   providers: [AppService],
