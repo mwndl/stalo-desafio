@@ -284,7 +284,7 @@ A documentação completa da API está disponível em:
 - `DELETE /api/v1/transactions/:id` - Excluir transação
 
 #### Sistema
-- `GET /api/health` - Health check
+- `GET /api/v1/health` - Health check
 - `GET /api/tenants` - Listar todos os tenants
 - `GET /api/users` - Listar todos os usuários (desenvolvimento)
 - `POST /api/tenants` - Registrar novo tenant
@@ -343,7 +343,7 @@ pnpm start:dev
 - **Frontend**: http://localhost:3000
 - **Backend API**: http://localhost:3001
 - **API Documentation**: http://localhost:3001/docs (apenas em desenvolvimento)
-- **Health Check**: http://localhost:3001/api/health
+- **Health Check**: http://localhost:3001/api/v1/health
 - **MinIO Console**: http://localhost:9001 (usuário: minioadmin, senha: minioadmin123)
 
 ## 📝 Notas Importantes

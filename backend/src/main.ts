@@ -92,7 +92,6 @@ async function bootstrap() {
       .addTag('users', 'Endpoints de usuários')
       .addTag('transactions', 'Endpoints de transações')
       .addTag('health', 'Endpoints de saúde da aplicação')
-      .addTag('seed', 'Endpoints para popular o banco de dados')
       .build();
 
     // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment

@@ -68,4 +68,27 @@ export class AppController {
   async createTenant(@Body() createTenantDto: CreateTenantDto): Promise<Tenant> {
     return this.appService.createTenant(createTenantDto);
   }
+
+  @Post('seed')
+  @ApiOperation({
+    summary: 'Executar seed do banco de dados',
+    description: 'Popula o banco de dados com dados de exemplo (apenas em desenvolvimento)',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Seed executado com sucesso',
+    schema: {
+      type: 'object',
+      properties: {
+        message: { type: 'string', example: 'Database seeded successfully!' },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 500,
+    description: 'Erro interno do servidor',
+  })
+  async seed(): Promise<{ message: string }> {
+    return this.appService.seed();
+  }
 }

@@ -4,6 +4,7 @@ import { Repository } from 'typeorm';
 import { Tenant } from './entities/tenant.entity';
 import { User } from './entities/user.entity';
 import { CreateTenantDto } from './dto/create-tenant.dto';
+import { SeedService } from './seed/seed.service';
 
 @Injectable()
 export class AppService {
@@ -12,6 +13,7 @@ export class AppService {
     private tenantRepository: Repository<Tenant>,
     @InjectRepository(User)
     private userRepository: Repository<User>,
+    private seedService: SeedService,
   ) {}
 
   async getTenants(): Promise<Tenant[]> {
@@ -45,5 +47,10 @@ export class AppService {
 
     const tenant = this.tenantRepository.create(createTenantDto);
     return this.tenantRepository.save(tenant);
+  }
+
+  async seed(): Promise<{ message: string }> {
+    await this.seedService.seed();
+    return { message: 'Database seeded successfully!' };
   }
 }
