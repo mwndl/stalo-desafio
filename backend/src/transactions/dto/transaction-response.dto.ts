@@ -37,7 +37,7 @@ export class TransactionResponseDto {
   @ApiProperty({
     description: 'Status da transação',
     enum: TransactionStatus,
-    example: TransactionStatus.COMPLETED,
+    example: TransactionStatus.PROCESSING,
   })
   status: TransactionStatus;
 
@@ -53,6 +53,13 @@ export class TransactionResponseDto {
     example: '2025-09-01',
   })
   transactionDate: Date;
+
+  @ApiProperty({
+    description: 'CPF do portador da transação',
+    example: '12345678901',
+    nullable: true,
+  })
+  cpf: string | null;
 
   @ApiProperty({
     description: 'Data de criação',

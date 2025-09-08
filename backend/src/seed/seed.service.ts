@@ -88,30 +88,37 @@ export class SeedService {
       {
         name: 'John Smith',
         email: `john.smith@${tenant.slug}.com`,
+        cpf: '12345678901',
       },
       {
         name: 'Sarah Johnson',
         email: `sarah.johnson@${tenant.slug}.com`,
+        cpf: '12345678902',
       },
       {
         name: 'Mike Wilson',
         email: `mike.wilson@${tenant.slug}.com`,
+        cpf: '12345678903',
       },
       {
         name: 'Emily Davis',
         email: `emily.davis@${tenant.slug}.com`,
+        cpf: '12345678904',
       },
       {
         name: 'David Brown',
         email: `david.brown@${tenant.slug}.com`,
+        cpf: '12345678905',
       },
       {
         name: 'Lisa Anderson',
         email: `lisa.anderson@${tenant.slug}.com`,
+        cpf: '12345678906',
       },
       {
         name: 'Robert Taylor',
         email: `robert.taylor@${tenant.slug}.com`,
+        cpf: '12345678907',
       },
     ];
 
@@ -152,6 +159,7 @@ export class SeedService {
         status: statuses[Math.floor(Math.random() * statuses.length)],
         category: categories[Math.floor(Math.random() * categories.length)],
         transactionDate,
+        cpf: user.cpf,
         tenantId: user.tenantId,
         userId: user.id,
       });

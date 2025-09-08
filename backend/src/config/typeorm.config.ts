@@ -8,7 +8,6 @@ export default new DataSource({
   password: process.env.DB_PASSWORD || 'stalo_password',
   database: process.env.DB_DATABASE || 'stalo_db',
   entities: [__dirname + '/../**/*.entity{.ts,.js}'],
-  migrations: [__dirname + '/../migrations/*{.ts,.js}'],
-  synchronize: false,
+  synchronize: true,
   logging: true,
 });

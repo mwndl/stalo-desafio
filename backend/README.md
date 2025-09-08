@@ -1,6 +1,6 @@
 # Backend - Nest.js + PostgreSQL
 
-Este é o backend da aplicação Stalo, desenvolvido com Nest.js e PostgreSQL.
+Este é o backend da aplicação Stalo, desenvolvido com Nest.js e PostgreSQL. O sistema implementa uma arquitetura multi-tenant para gerenciamento de transações financeiras.
 
 ## 🚀 Tecnologias
 
@@ -8,19 +8,28 @@ Este é o backend da aplicação Stalo, desenvolvido com Nest.js e PostgreSQL.
 - **Banco de Dados**: PostgreSQL
 - **ORM**: TypeORM
 - **Gerenciador de Pacotes**: pnpm
+- **Autenticação**: JWT
+- **Upload de Arquivos**: MinIO
+- **Arquitetura**: Multi-tenant
 
 ## 📁 Estrutura
 
 ```
 backend/
 ├── src/
-│   ├── config/
-│   │   └── database.config.ts    # Configuração do banco
-│   ├── entities/
-│   │   └── user.entity.ts        # Entidade User
-│   ├── app.controller.ts         # Controller principal
-│   ├── app.service.ts            # Service principal
-│   └── app.module.ts             # Módulo principal
+│   ├── auth/                     # Módulo de autenticação
+│   ├── common/                   # Serviços e guards compartilhados
+│   ├── config/                   # Configurações do banco
+│   ├── entities/                 # Entidades do banco
+│   │   ├── user.entity.ts        # Entidade User
+│   │   ├── tenant.entity.ts      # Entidade Tenant
+│   │   ├── transaction.entity.ts # Entidade Transaction
+│   │   └── refresh-token.entity.ts
+│   ├── transactions/             # Módulo de transações
+│   ├── users/                    # Módulo de usuários
+│   ├── health/                   # Health check
+│   ├── seed/                     # Dados de seed
+│   └── main.ts                   # Arquivo principal
 ├── Dockerfile                    # Docker para produção
 ├── Dockerfile.dev                # Docker para desenvolvimento
 └── package.json
@@ -64,16 +73,49 @@ docker-compose up --build
 
 ## 🌐 Endpoints
 
-- `GET /` - Hello World
-- `GET /users` - Listar usuários
-- `POST /users` - Criar usuário
+### Autenticação
+- `POST /v1/auth/login` - Login com email e senha
+- `POST /v1/auth/register` - Registro de novo usuário
+- `GET /v1/auth/me` - Dados do usuário logado
+- `POST /v1/auth/refresh` - Renovar token
+- `POST /v1/auth/logout` - Logout
 
-### Exemplo de criação de usuário:
+### Transações
+- `GET /v1/transactions` - Listar transações (com filtros e paginação)
+- `POST /v1/transactions` - Criar transação (com upload de documento)
+- `GET /v1/transactions/:id` - Obter transação por ID
+- `PUT /v1/transactions/:id` - Atualizar transação
+- `DELETE /v1/transactions/:id` - Excluir transação (soft delete)
+- `GET /v1/transactions/summary` - Resumo financeiro
+- `GET /v1/transactions/documents/:filename` - Download de documento
+
+### Health Check
+- `GET /health` - Status da aplicação
+
+### Seed
+- `POST /seed/run` - Executar seed do banco de dados
+
+### Exemplo de login:
 
 ```bash
-curl -X POST http://localhost:3001/users \
+curl -X POST http://localhost:3001/v1/auth/login \
   -H "Content-Type: application/json" \
-  -d '{"name": "João", "email": "joao@example.com"}'
+  -d '{"email": "john.smith@techcorp-solutions.com", "password": "password123"}'
+```
+
+### Exemplo de criação de transação:
+
+```bash
+curl -X POST http://localhost:3001/v1/transactions \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <token>" \
+  -d '{
+    "title": "Salário mensal",
+    "amount": 5000.00,
+    "type": "income",
+    "transactionDate": "2025-01-01",
+    "cpf": "12345678901"
+  }'
 ```
 
 ## 🗄️ Banco de Dados
@@ -92,9 +134,82 @@ curl -X POST http://localhost:3001/users \
 - `id`: UUID (Primary Key)
 - `email`: string (unique)
 - `name`: string
+- `cpf`: string (unique, nullable)
 - `password`: string (nullable)
+- `isActive`: boolean
+- `tenantId`: UUID (Foreign Key)
 - `createdAt`: Date
 - `updatedAt`: Date
+
+#### Tenant
+- `id`: UUID (Primary Key)
+- `name`: string (unique)
+- `slug`: string (unique)
+- `description`: string (nullable)
+- `isActive`: boolean
+- `createdAt`: Date
+- `updatedAt`: Date
+
+#### Transaction
+- `id`: UUID (Primary Key)
+- `title`: string
+- `description`: string (nullable)
+- `amount`: decimal(10,2)
+- `type`: enum (income, expense)
+- `status`: enum (processing, approved, rejected)
+- `category`: string (nullable)
+- `transactionDate`: date
+- `cpf`: string (nullable)
+- `documentPath`: string (nullable)
+- `tenantId`: UUID (Foreign Key)
+- `userId`: UUID (Foreign Key)
+- `createdAt`: Date
+- `updatedAt`: Date
+- `deletedAt`: Date (nullable, soft delete)
+
+#### RefreshToken
+- `id`: UUID (Primary Key)
+- `token`: string (unique)
+- `userId`: UUID (Foreign Key)
+- `expiresAt`: Date
+- `createdAt`: Date
+
+## ✨ Funcionalidades Implementadas
+
+### Autenticação
+- ✅ Login com email e senha
+- ✅ Registro de usuários
+- ✅ JWT tokens (access + refresh)
+- ✅ Logout e logout de todos os dispositivos
+- ✅ Middleware de autenticação
+
+### Multi-tenant
+- ✅ Isolamento de dados por tenant
+- ✅ Interceptor para scope de tenant
+- ✅ Guards para verificação de tenant
+
+### Transações
+- ✅ CRUD completo de transações
+- ✅ Soft delete
+- ✅ Upload de documentos (PDF, imagens)
+- ✅ Filtros e paginação
+- ✅ Resumo financeiro
+- ✅ Verificação de ownership (usuário só pode editar/excluir suas transações)
+
+### Campos da Transação
+- ✅ ID (auto incremento)
+- ✅ Data de criação (created_at)
+- ✅ Usuário criador
+- ✅ Valor da transação
+- ✅ CPF do portador
+- ✅ Documento (upload)
+- ✅ Status (Em processamento, Aprovada, Negada)
+
+### Validações
+- ✅ Validação de tipos de arquivo
+- ✅ Limite de tamanho de arquivo (5MB)
+- ✅ Validação de dados de entrada
+- ✅ Tratamento de erros padronizado
 
 ## 📝 Scripts
 

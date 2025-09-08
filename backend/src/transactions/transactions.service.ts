@@ -140,12 +140,14 @@ export class TransactionsService extends TenantAwareService<Transaction> {
   async update(
     id: string, 
     updateTransactionDto: UpdateTransactionDto, 
-    tenantId: string
+    tenantId: string,
+    userId: string
   ): Promise<TransactionResponseDto> {
     const transaction = await this.repository.findOne({
       where: { 
         id, 
         tenantId,
+        userId,
         deletedAt: IsNull(),
       },
     });
@@ -172,11 +174,12 @@ export class TransactionsService extends TenantAwareService<Transaction> {
     return this.mapToResponseDto(updatedTransaction!);
   }
 
-  async remove(id: string, tenantId: string): Promise<{ message: string }> {
+  async remove(id: string, tenantId: string, userId: string): Promise<{ message: string }> {
     const transaction = await this.repository.findOne({
       where: { 
         id, 
         tenantId,
+        userId,
         deletedAt: IsNull(),
       },
     });
@@ -246,6 +249,7 @@ export class TransactionsService extends TenantAwareService<Transaction> {
       status: transaction.status,
       category: transaction.category,
       transactionDate: transaction.transactionDate,
+      cpf: transaction.cpf,
       createdAt: transaction.createdAt,
       updatedAt: transaction.updatedAt,
       deletedAt: transaction.deletedAt,

@@ -8,9 +8,9 @@ export enum TransactionType {
 }
 
 export enum TransactionStatus {
-  PENDING = 'pending',
-  COMPLETED = 'completed',
-  CANCELLED = 'cancelled',
+  PROCESSING = 'processing',
+  APPROVED = 'approved',
+  REJECTED = 'rejected',
 }
 
 @Entity('transactions')
@@ -36,7 +36,7 @@ export class Transaction {
   @Column({
     type: 'enum',
     enum: TransactionStatus,
-    default: TransactionStatus.PENDING,
+    default: TransactionStatus.PROCESSING,
   })
   status: TransactionStatus;
 
@@ -45,6 +45,9 @@ export class Transaction {
 
   @Column({ type: 'date' })
   transactionDate: Date;
+
+  @Column({ nullable: true })
+  cpf: string;
 
   @Column({ nullable: true })
   documentPath: string;

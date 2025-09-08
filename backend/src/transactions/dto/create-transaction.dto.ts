@@ -43,7 +43,7 @@ export class CreateTransactionDto {
   @ApiProperty({
     description: 'Status da transação',
     enum: TransactionStatus,
-    example: TransactionStatus.COMPLETED,
+    example: TransactionStatus.PROCESSING,
     required: false,
   })
   @IsEnum(TransactionStatus)
@@ -66,6 +66,15 @@ export class CreateTransactionDto {
   })
   @IsDateString()
   transactionDate: string;
+
+  @ApiProperty({
+    description: 'CPF do portador da transação',
+    example: '12345678901',
+    required: false,
+  })
+  @IsString()
+  @IsOptional()
+  cpf?: string;
 
   @ApiProperty({
     description: 'Caminho do documento anexado',
