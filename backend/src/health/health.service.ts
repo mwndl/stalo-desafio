@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { AppException } from '../common/exceptions/app.exception';
 import { InjectDataSource } from '@nestjs/typeorm';
 import { DataSource } from 'typeorm';
 

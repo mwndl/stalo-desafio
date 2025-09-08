@@ -30,8 +30,9 @@ export class AuthController {
       type: 'object',
       properties: {
         message: { type: 'string', example: 'Credenciais inválidas' },
-        error: { type: 'string', example: 'Unauthorized' },
+        errorCode: { type: 'string', example: 'AUTH_001' },
         statusCode: { type: 'number', example: 401 },
+        description: { type: 'string', example: 'Email ou senha incorretos' },
       },
     },
   })
@@ -60,8 +61,9 @@ export class AuthController {
       type: 'object',
       properties: {
         message: { type: 'string', example: 'Email já está em uso' },
-        error: { type: 'string', example: 'Conflict' },
+        errorCode: { type: 'string', example: 'AUTH_002' },
         statusCode: { type: 'number', example: 409 },
+        description: { type: 'string', example: 'Já existe um usuário cadastrado com este email' },
       },
     },
   })
@@ -76,8 +78,9 @@ export class AuthController {
       type: 'object',
       properties: {
         message: { type: 'string', example: 'Tenant não encontrado' },
-        error: { type: 'string', example: 'Not Found' },
+        errorCode: { type: 'string', example: 'AUTH_006' },
         statusCode: { type: 'number', example: 404 },
+        description: { type: 'string', example: 'Organização não existe ou foi removida' },
       },
     },
   })

@@ -1,5 +1,6 @@
-import { Injectable, ForbiddenException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { Repository, SelectQueryBuilder, ObjectLiteral } from 'typeorm';
+import { AppException } from '../exceptions/app.exception';
 
 @Injectable()
 export abstract class TenantAwareService<T extends ObjectLiteral> {
@@ -11,7 +12,7 @@ export abstract class TenantAwareService<T extends ObjectLiteral> {
 
   protected validateTenantAccess(entity: any, tenantId: string): void {
     if (entity.tenantId !== tenantId) {
-      throw new ForbiddenException('Acesso negado: recurso não pertence ao tenant');
+      throw AppException.resourceNotBelongsToTenant();
     }
   }
 }

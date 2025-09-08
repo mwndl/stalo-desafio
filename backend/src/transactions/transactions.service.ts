@@ -1,9 +1,10 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Between, IsNull } from 'typeorm';
 import { Transaction, TransactionType, TransactionStatus } from '../entities/transaction.entity';
 import { TenantAwareService } from '../common/services/tenant-aware.service';
 import { CreateTransactionDto } from './dto/create-transaction.dto';
+import { AppException } from '../common/exceptions/app.exception';
 import { UpdateTransactionDto } from './dto/update-transaction.dto';
 import { TransactionFiltersDto } from './dto/transaction-filters.dto';
 import { PaginationDto, PaginatedResponseDto } from './dto/pagination.dto';
@@ -109,7 +110,7 @@ export class TransactionsService extends TenantAwareService<Transaction> {
     });
 
     if (!transaction) {
-      throw new NotFoundException('Transação não encontrada');
+      throw AppException.transactionNotFound();
     }
 
     return this.mapToResponseDto(transaction);
@@ -129,7 +130,7 @@ export class TransactionsService extends TenantAwareService<Transaction> {
     });
 
     if (!transaction) {
-      throw new NotFoundException('Transação não encontrada');
+      throw AppException.transactionNotFound();
     }
 
     // Garantir que o tenantId e userId não sejam alterados
@@ -160,7 +161,7 @@ export class TransactionsService extends TenantAwareService<Transaction> {
     });
 
     if (!transaction) {
-      throw new NotFoundException('Transação não encontrada');
+      throw AppException.transactionNotFound();
     }
 
     // Soft delete - apenas marcar como deletado

@@ -1,9 +1,10 @@
-import { Injectable, BadRequestException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { S3Client, PutObjectCommand, GetObjectCommand, HeadObjectCommand } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { MulterOptions } from '@nestjs/platform-express/multer/interfaces/multer-options.interface';
 import { memoryStorage } from 'multer';
 import { extname } from 'path';
+import { AppException } from '../exceptions/app.exception';
 
 @Injectable()
 export class UploadService {
@@ -37,7 +38,7 @@ export class UploadService {
         if (this.allowedMimeTypes.includes(file.mimetype)) {
           cb(null, true);
         } else {
-          cb(new BadRequestException('Tipo de arquivo não permitido. Apenas PDF, PNG, JPG e JPEG são aceitos.'), false);
+          cb(AppException.fileTypeNotAllowed(), false);
         }
       },
       limits: {
@@ -48,15 +49,15 @@ export class UploadService {
 
   validateFile(file: Express.Multer.File): void {
     if (!file) {
-      throw new BadRequestException('Arquivo não fornecido');
+      throw AppException.fileNotProvided();
     }
 
     if (!this.allowedMimeTypes.includes(file.mimetype)) {
-      throw new BadRequestException('Tipo de arquivo não permitido. Apenas PDF, PNG, JPG e JPEG são aceitos.');
+      throw AppException.fileTypeNotAllowed();
     }
 
     if (file.size > this.maxFileSize) {
-      throw new BadRequestException('Arquivo muito grande. Tamanho máximo permitido: 5MB');
+      throw AppException.fileTooLarge();
     }
   }
 

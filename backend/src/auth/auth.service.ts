@@ -1,4 +1,4 @@
-import { Injectable, UnauthorizedException, ConflictException, NotFoundException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -9,6 +9,7 @@ import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
 import { AuthResponseDto } from './dto/auth-response.dto';
 import { RefreshTokenDto, RefreshResponseDto } from './dto/refresh-token.dto';
+import { AppException } from '../common/exceptions/app.exception';
 import * as bcrypt from 'bcryptjs';
 import * as crypto from 'crypto';
 
@@ -40,7 +41,7 @@ export class AuthService {
     const user = await this.validateUser(loginDto.email, loginDto.password);
     
     if (!user) {
-      throw new UnauthorizedException('Credenciais inválidas');
+      throw AppException.invalidCredentials();
     }
 
     // Gerar tokens
@@ -65,7 +66,7 @@ export class AuthService {
     });
 
     if (!tenant) {
-      throw new NotFoundException('Tenant não encontrado');
+      throw AppException.tenantNotFound();
     }
 
     // Verificar se o email já existe
@@ -74,7 +75,7 @@ export class AuthService {
     });
 
     if (existingUser) {
-      throw new ConflictException('Email já está em uso');
+      throw AppException.emailAlreadyExists();
     }
 
     // Criptografar a senha
@@ -113,7 +114,7 @@ export class AuthService {
     });
 
     if (!user) {
-      throw new UnauthorizedException('Usuário não encontrado');
+      throw AppException.userNotFound();
     }
 
     return user;
@@ -159,12 +160,12 @@ export class AuthService {
     });
 
     if (!refreshToken || refreshToken.expiresAt < new Date()) {
-      throw new UnauthorizedException('Refresh token inválido ou expirado');
+      throw AppException.invalidRefreshToken();
     }
 
     const user = refreshToken.user;
     if (!user.isActive) {
-      throw new UnauthorizedException('Usuário inativo');
+      throw AppException.userInactive();
     }
 
     // Invalidar o refresh token atual

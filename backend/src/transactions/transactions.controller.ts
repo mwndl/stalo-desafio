@@ -13,6 +13,7 @@ import { TenantId } from '../common/decorators/tenant.decorator';
 import { TransactionType, TransactionStatus } from '../entities/transaction.entity';
 import { User } from '../entities/user.entity';
 import { UploadService } from '../common/services/upload.service';
+import { AppException } from '../common/exceptions/app.exception';
 import { FileAccessGuard } from '../common/guards/file-access.guard';
 import type { Response } from 'express';
 
@@ -35,7 +36,7 @@ export class TransactionsController {
       if (allowedMimeTypes.includes(file.mimetype)) {
         cb(null, true);
       } else {
-        cb(new Error('Tipo de arquivo não permitido'), false);
+        cb(AppException.fileTypeNotAllowed(), false);
       }
     },
     limits: { fileSize: 5 * 1024 * 1024 }, // 5MB

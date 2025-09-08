@@ -1,6 +1,7 @@
-import { Injectable, CanActivate, ExecutionContext, ForbiddenException, NotFoundException } from '@nestjs/common';
+import { Injectable, CanActivate, ExecutionContext } from '@nestjs/common';
 import { IsNull } from 'typeorm';
 import { TransactionsService } from '../../transactions/transactions.service';
+import { AppException } from '../exceptions/app.exception';
 
 @Injectable()
 export class FileAccessGuard implements CanActivate {
@@ -12,7 +13,7 @@ export class FileAccessGuard implements CanActivate {
     const filename = request.params.filename;
 
     if (!user?.tenantId) {
-      throw new ForbiddenException('Tenant não identificado');
+      throw AppException.tenantNotIdentified();
     }
 
     // O filename agora é a chave completa do MinIO (ex: transactions/tenantId/userId/filename)
@@ -28,15 +29,15 @@ export class FileAccessGuard implements CanActivate {
       });
       
       if (!transaction) {
-        throw new NotFoundException('Arquivo não encontrado');
+        throw AppException.fileNotFound();
       }
 
       return true;
     } catch (error) {
-      if (error instanceof NotFoundException) {
+      if (error instanceof AppException) {
         throw error;
       }
-      throw new NotFoundException('Arquivo não encontrado');
+      throw AppException.fileNotFound();
     }
   }
 }

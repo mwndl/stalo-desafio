@@ -1,8 +1,9 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { User } from '../entities/user.entity';
 import { TenantAwareService } from '../common/services/tenant-aware.service';
+import { AppException } from '../common/exceptions/app.exception';
 
 @Injectable()
 export class UsersService extends TenantAwareService<User> {
@@ -27,7 +28,7 @@ export class UsersService extends TenantAwareService<User> {
     });
 
     if (!user) {
-      throw new NotFoundException('Usuário não encontrado');
+      throw AppException.userNotFound();
     }
 
     return user;

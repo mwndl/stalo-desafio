@@ -3,10 +3,10 @@ import {
   NestInterceptor,
   ExecutionContext,
   CallHandler,
-  ForbiddenException,
 } from '@nestjs/common';
 import { Observable } from 'rxjs';
 import { Reflector } from '@nestjs/core';
+import { AppException } from '../exceptions/app.exception';
 
 export const TENANT_SCOPE_KEY = 'tenantScope';
 
@@ -26,7 +26,7 @@ export class TenantScopeInterceptor implements NestInterceptor {
     const user = request.user;
 
     if (!user?.tenantId) {
-      throw new ForbiddenException('Tenant não identificado no token');
+      throw AppException.tenantNotIdentifiedInToken();
     }
 
     // Adicionar tenantId ao contexto da requisição
