@@ -1,25 +1,49 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, ConflictException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import { Tenant } from './entities/tenant.entity';
 import { User } from './entities/user.entity';
+import { CreateTenantDto } from './dto/create-tenant.dto';
 
 @Injectable()
 export class AppService {
   constructor(
+    @InjectRepository(Tenant)
+    private tenantRepository: Repository<Tenant>,
     @InjectRepository(User)
     private userRepository: Repository<User>,
   ) {}
 
-  getHello(): string {
-    return 'Hello World!';
+  async getTenants(): Promise<Tenant[]> {
+    return this.tenantRepository.find({
+      where: { isActive: true },
+      order: { createdAt: 'DESC' },
+    });
   }
 
   async getUsers(): Promise<User[]> {
-    return this.userRepository.find();
+    return this.userRepository.find({
+      relations: ['tenant'],
+      order: { createdAt: 'DESC' },
+    });
   }
 
-  async createUser(userData: Partial<User>): Promise<User> {
-    const user = this.userRepository.create(userData);
-    return this.userRepository.save(user);
+  async createTenant(createTenantDto: CreateTenantDto): Promise<Tenant> {
+    // Verificar se o slug já existe
+    const existingTenant = await this.tenantRepository.findOne({
+      where: { slug: createTenantDto.slug },
+    });
+
+    if (existingTenant) {
+      throw new ConflictException({
+        message: 'Slug já está em uso',
+        errorCode: 'TENANT_001',
+        statusCode: 409,
+        description: 'Já existe um tenant com este slug',
+      });
+    }
+
+    const tenant = this.tenantRepository.create(createTenantDto);
+    return this.tenantRepository.save(tenant);
   }
 }

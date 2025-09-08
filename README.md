@@ -214,7 +214,34 @@ curl -X POST http://localhost:3001/api/v1/transactions \
   }'
 ```
 
-### 4. Verificar Isolamento
+### 4. Listar Tenants
+
+```bash
+# Listar todos os tenants
+curl -X GET http://localhost:3001/api/tenants
+```
+
+### 5. Listar Usuários
+
+```bash
+# Listar todos os usuários do sistema
+curl -X GET http://localhost:3001/api/users
+```
+
+### 6. Criar Novo Tenant
+
+```bash
+# Criar um novo tenant
+curl -X POST http://localhost:3001/api/tenants \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Nova Empresa Ltda",
+    "slug": "nova-empresa-ltda",
+    "description": "Empresa de exemplo para demonstração"
+  }'
+```
+
+### 7. Verificar Isolamento
 
 - As transações criadas em cada tenant só aparecem para usuários daquele tenant
 - Usuários de um tenant não conseguem acessar dados de outros tenants
@@ -258,6 +285,9 @@ A documentação completa da API está disponível em:
 
 #### Sistema
 - `GET /api/health` - Health check
+- `GET /api/tenants` - Listar todos os tenants
+- `GET /api/users` - Listar todos os usuários (desenvolvimento)
+- `POST /api/tenants` - Registrar novo tenant
 - `POST /api/seed` - Executar seed (desenvolvimento)
 
 ## 🛠️ Desenvolvimento Local
