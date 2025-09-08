@@ -9,6 +9,7 @@ import { UpdateTransactionDto } from './dto/update-transaction.dto';
 import { TransactionFiltersDto } from './dto/transaction-filters.dto';
 import { PaginationDto, PaginatedResponseDto } from './dto/pagination.dto';
 import { TransactionResponseDto } from './dto/transaction-response.dto';
+import { SortBy, SortOrder } from './dto/sorting.dto';
 
 @Injectable()
 export class TransactionsService extends TenantAwareService<Transaction> {
@@ -41,9 +42,11 @@ export class TransactionsService extends TenantAwareService<Transaction> {
   async findAll(
     tenantId: string, 
     filters: TransactionFiltersDto = {}, 
-    pagination: PaginationDto = {}
+    pagination: PaginationDto = {},
+    sorting: { sortBy?: string; order?: string } = {}
   ): Promise<PaginatedResponseDto<TransactionResponseDto>> {
     const { page = 1, limit = 10 } = pagination;
+    const { sortBy = 'createdAt', order = 'desc' } = sorting;
     const skip = (page - 1) * limit;
 
     const queryBuilder = this.repository.createQueryBuilder('transaction')
@@ -65,15 +68,33 @@ export class TransactionsService extends TenantAwareService<Transaction> {
     if (filters.userId) {
       queryBuilder.andWhere('transaction.userId = :userId', { userId: filters.userId });
     }
-    if (filters.startDate && filters.endDate) {
-      queryBuilder.andWhere('transaction.transactionDate BETWEEN :startDate AND :endDate', {
-        startDate: filters.startDate,
-        endDate: filters.endDate,
+    if (filters.cpf) {
+      queryBuilder.andWhere('user.cpf = :cpf', { cpf: filters.cpf });
+    }
+
+    // Aplicar filtros de data (priorizar createdFrom/createdTo, fallback para startDate/endDate)
+    const startDate = filters.createdFrom || filters.startDate;
+    const endDate = filters.createdTo || filters.endDate;
+    
+    if (startDate && endDate) {
+      queryBuilder.andWhere('transaction.createdAt BETWEEN :startDate AND :endDate', {
+        startDate: new Date(startDate),
+        endDate: new Date(endDate),
+      });
+    } else if (startDate) {
+      queryBuilder.andWhere('transaction.createdAt >= :startDate', {
+        startDate: new Date(startDate),
+      });
+    } else if (endDate) {
+      queryBuilder.andWhere('transaction.createdAt <= :endDate', {
+        endDate: new Date(endDate),
       });
     }
 
-    // Ordenar por data de transação (mais recente primeiro)
-    queryBuilder.orderBy('transaction.transactionDate', 'DESC');
+    // Aplicar ordenação
+    const sortField = this.getSortField(sortBy);
+    const sortDirection = order.toLowerCase() === 'asc' ? 'ASC' : 'DESC';
+    queryBuilder.orderBy(sortField, sortDirection);
 
     // Contar total de registros
     const total = await queryBuilder.getCount();
@@ -200,6 +221,19 @@ export class TransactionsService extends TenantAwareService<Transaction> {
       balance: totalIncome - totalExpense,
       transactionCount: transactions.length,
     };
+  }
+
+  private getSortField(sortBy: string): string {
+    switch (sortBy) {
+      case 'createdAt':
+        return 'transaction.createdAt';
+      case 'value':
+        return 'transaction.amount';
+      case 'status':
+        return 'transaction.status';
+      default:
+        return 'transaction.createdAt';
+    }
   }
 
   private mapToResponseDto(transaction: Transaction): TransactionResponseDto {

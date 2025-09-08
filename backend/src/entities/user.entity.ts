@@ -13,6 +13,9 @@ export class User {
   @Column()
   name: string;
 
+  @Column({ nullable: true, unique: true })
+  cpf: string;
+
   @Column({ nullable: true })
   password: string;
 

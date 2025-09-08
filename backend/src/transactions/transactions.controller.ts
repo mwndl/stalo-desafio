@@ -1,16 +1,43 @@
-import { Controller, Get, Post, Put, Delete, Body, Param, Query, UseGuards, UseInterceptors, Request, UseInterceptors as UseFileInterceptors, UploadedFile, Res, StreamableFile } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiQuery, ApiConsumes } from '@nestjs/swagger';
+import {
+  Controller,
+  Get,
+  Post,
+  Put,
+  Delete,
+  Body,
+  Param,
+  Query,
+  UseGuards,
+  UseInterceptors,
+  Request,
+  UseInterceptors as UseFileInterceptors,
+  UploadedFile,
+  Res,
+} from '@nestjs/common';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBearerAuth,
+  ApiQuery,
+  ApiConsumes,
+} from '@nestjs/swagger';
 import { FileInterceptor } from '@nestjs/platform-express';
+import * as multer from 'multer';
 import { TransactionsService } from './transactions.service';
 import { CreateTransactionDto } from './dto/create-transaction.dto';
 import { UpdateTransactionDto } from './dto/update-transaction.dto';
-import { TransactionFiltersDto } from './dto/transaction-filters.dto';
-import { PaginationDto, PaginatedResponseDto } from './dto/pagination.dto';
+import { PaginatedResponseDto } from './dto/pagination.dto';
 import { TransactionResponseDto } from './dto/transaction-response.dto';
+import { TransactionQueryDto } from './dto/transaction-query.dto';
+import { SortBy, SortOrder } from './dto/sorting.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { TenantScopeInterceptor } from '../common/interceptors/tenant-scope.interceptor';
 import { TenantId } from '../common/decorators/tenant.decorator';
-import { TransactionType, TransactionStatus } from '../entities/transaction.entity';
+import {
+  TransactionType,
+  TransactionStatus,
+} from '../entities/transaction.entity';
 import { User } from '../entities/user.entity';
 import { UploadService } from '../common/services/upload.service';
 import { AppException } from '../common/exceptions/app.exception';
@@ -29,21 +56,29 @@ export class TransactionsController {
   ) {}
 
   @Post()
-  @UseFileInterceptors(FileInterceptor('document', {
-    storage: require('multer').memoryStorage(),
-    fileFilter: (req, file, cb) => {
-      const allowedMimeTypes = ['application/pdf', 'image/png', 'image/jpeg', 'image/jpg'];
-      if (allowedMimeTypes.includes(file.mimetype)) {
-        cb(null, true);
-      } else {
-        cb(AppException.fileTypeNotAllowed(), false);
-      }
-    },
-    limits: { fileSize: 5 * 1024 * 1024 }, // 5MB
-  }))
+  @UseFileInterceptors(
+    FileInterceptor('document', {
+      storage: multer.memoryStorage(),
+      fileFilter: (req, file, cb) => {
+        const allowedMimeTypes = [
+          'application/pdf',
+          'image/png',
+          'image/jpeg',
+          'image/jpg',
+        ];
+        if (allowedMimeTypes.includes(file.mimetype)) {
+          cb(null, true);
+        } else {
+          cb(AppException.fileTypeNotAllowed(), false);
+        }
+      },
+      limits: { fileSize: 5 * 1024 * 1024 }, // 5MB
+    }),
+  )
   @ApiOperation({
     summary: 'Criar transação',
-    description: 'Cria uma nova transação para o tenant do usuário logado com documento opcional',
+    description:
+      'Cria uma nova transação para o tenant do usuário logado com documento opcional',
   })
   @ApiConsumes('multipart/form-data')
   @ApiResponse({
@@ -62,41 +97,100 @@ export class TransactionsController {
     @Request() req,
   ): Promise<TransactionResponseDto> {
     const user: User = req.user;
-    
+
     // Se houver arquivo, validar e fazer upload para MinIO
     if (file) {
       this.uploadService.validateFile(file);
-      const minioKey = await this.uploadService.uploadToMinIO(file, tenantId, user.id);
+      const minioKey = await this.uploadService.uploadToMinIO(
+        file,
+        tenantId,
+        user.id,
+      );
       createTransactionDto.documentPath = minioKey;
     }
-    
-    return this.transactionsService.create(createTransactionDto, tenantId, user.id);
+
+    return this.transactionsService.create(
+      createTransactionDto,
+      tenantId,
+      user.id,
+    );
   }
 
   @Get()
   @ApiOperation({
     summary: 'Listar transações',
-    description: 'Retorna todas as transações do tenant do usuário logado com filtros e paginação',
+    description:
+      'Retorna todas as transações do tenant do usuário logado com filtros, paginação e ordenação',
   })
   @ApiQuery({ name: 'type', enum: TransactionType, required: false })
   @ApiQuery({ name: 'status', enum: TransactionStatus, required: false })
   @ApiQuery({ name: 'category', required: false })
   @ApiQuery({ name: 'userId', required: false })
-  @ApiQuery({ name: 'startDate', required: false })
-  @ApiQuery({ name: 'endDate', required: false })
-  @ApiQuery({ name: 'page', required: false, type: Number })
-  @ApiQuery({ name: 'limit', required: false, type: Number })
+  @ApiQuery({
+    name: 'cpf',
+    required: false,
+    description: 'CPF do usuário (busca exata)',
+  })
+  @ApiQuery({
+    name: 'createdFrom',
+    required: false,
+    description: 'Data inicial do período',
+  })
+  @ApiQuery({
+    name: 'createdTo',
+    required: false,
+    description: 'Data final do período',
+  })
+  @ApiQuery({
+    name: 'startDate',
+    required: false,
+    description: 'Data inicial (legacy)',
+  })
+  @ApiQuery({
+    name: 'endDate',
+    required: false,
+    description: 'Data final (legacy)',
+  })
+  @ApiQuery({
+    name: 'page',
+    required: false,
+    type: Number,
+    description: 'Número da página',
+  })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    type: Number,
+    description: 'Itens por página (máximo 100)',
+  })
+  @ApiQuery({
+    name: 'sortBy',
+    enum: SortBy,
+    required: false,
+    description: 'Campo para ordenação',
+  })
+  @ApiQuery({
+    name: 'order',
+    enum: SortOrder,
+    required: false,
+    description: 'Direção da ordenação',
+  })
   @ApiResponse({
     status: 200,
     description: 'Lista paginada de transações retornada com sucesso',
     type: PaginatedResponseDto<TransactionResponseDto>,
   })
   async findAll(
-    @Query() query: TransactionFiltersDto & PaginationDto,
+    @Query() query: TransactionQueryDto,
     @TenantId() tenantId: string,
   ): Promise<PaginatedResponseDto<TransactionResponseDto>> {
-    const { page, limit, ...filters } = query;
-    return this.transactionsService.findAll(tenantId, filters, { page, limit });
+    const { page, limit, sortBy, order, ...filters } = query;
+    return this.transactionsService.findAll(
+      tenantId,
+      filters,
+      { page, limit },
+      { sortBy, order },
+    );
   }
 
   @Get('summary')
@@ -111,9 +205,9 @@ export class TransactionsController {
     schema: {
       type: 'object',
       properties: {
-        totalIncome: { type: 'number', example: 5000.00 },
-        totalExpense: { type: 'number', example: 3200.50 },
-        balance: { type: 'number', example: 1799.50 },
+        totalIncome: { type: 'number', example: 5000.0 },
+        totalExpense: { type: 'number', example: 3200.5 },
+        balance: { type: 'number', example: 1799.5 },
         transactionCount: { type: 'number', example: 25 },
       },
     },
@@ -139,7 +233,10 @@ export class TransactionsController {
     status: 404,
     description: 'Transação não encontrada',
   })
-  async findOne(@Param('id') id: string, @TenantId() tenantId: string): Promise<TransactionResponseDto> {
+  async findOne(
+    @Param('id') id: string,
+    @TenantId() tenantId: string,
+  ): Promise<TransactionResponseDto> {
     return this.transactionsService.findOne(id, tenantId);
   }
 
@@ -172,7 +269,8 @@ export class TransactionsController {
   @Delete(':id')
   @ApiOperation({
     summary: 'Excluir transação (soft delete)',
-    description: 'Exclui uma transação do tenant do usuário logado (soft delete)',
+    description:
+      'Exclui uma transação do tenant do usuário logado (soft delete)',
   })
   @ApiResponse({
     status: 200,
@@ -180,7 +278,10 @@ export class TransactionsController {
     schema: {
       type: 'object',
       properties: {
-        message: { type: 'string', example: 'Transação excluída com sucesso' },
+        message: {
+          type: 'string',
+          example: 'Transação excluída com sucesso',
+        },
       },
     },
   })
@@ -188,7 +289,10 @@ export class TransactionsController {
     status: 404,
     description: 'Transação não encontrada',
   })
-  async remove(@Param('id') id: string, @TenantId() tenantId: string): Promise<{ message: string }> {
+  async remove(
+    @Param('id') id: string,
+    @TenantId() tenantId: string,
+  ): Promise<{ message: string }> {
     return this.transactionsService.remove(id, tenantId);
   }
 
@@ -196,7 +300,8 @@ export class TransactionsController {
   @UseGuards(JwtAuthGuard, FileAccessGuard)
   @ApiOperation({
     summary: 'Baixar documento da transação',
-    description: 'Baixa um documento anexado a uma transação do tenant do usuário logado',
+    description:
+      'Baixa um documento anexado a uma transação do tenant do usuário logado',
   })
   @ApiResponse({
     status: 200,
@@ -216,7 +321,7 @@ export class TransactionsController {
   ): Promise<void> {
     // O filename agora é a chave completa do MinIO
     const signedUrl = await this.uploadService.getSignedDownloadUrl(filename);
-    
+
     // Redirecionar para a URL assinada do MinIO
     res.redirect(signedUrl);
   }

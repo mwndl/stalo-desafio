@@ -38,7 +38,34 @@ export class TransactionFiltersDto {
   userId?: string;
 
   @ApiProperty({
-    description: 'Data inicial',
+    description: 'CPF do usuário (busca exata)',
+    example: '12345678901',
+    required: false,
+  })
+  @IsString()
+  @IsOptional()
+  cpf?: string;
+
+  @ApiProperty({
+    description: 'Data inicial do período',
+    example: '2025-09-01',
+    required: false,
+  })
+  @IsDateString()
+  @IsOptional()
+  createdFrom?: string;
+
+  @ApiProperty({
+    description: 'Data final do período',
+    example: '2025-09-30',
+    required: false,
+  })
+  @IsDateString()
+  @IsOptional()
+  createdTo?: string;
+
+  @ApiProperty({
+    description: 'Data inicial (legacy - mantido para compatibilidade)',
     example: '2025-09-01',
     required: false,
   })
@@ -47,7 +74,7 @@ export class TransactionFiltersDto {
   startDate?: string;
 
   @ApiProperty({
-    description: 'Data final',
+    description: 'Data final (legacy - mantido para compatibilidade)',
     example: '2025-09-30',
     required: false,
   })
