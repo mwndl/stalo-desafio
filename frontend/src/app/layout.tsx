@@ -13,8 +13,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="pt-BR" style={{ margin: 0, padding: 0 }}>
-      <body style={{ margin: 0, padding: 0 }}>
+    <html lang="pt-BR" style={{ margin: '0 !important', padding: '0 !important', boxSizing: 'border-box !important' }}>
+      <body style={{ margin: '0 !important', padding: '0 !important', border: '0 !important', boxSizing: 'border-box !important' }}>
         <AuthProvider>
           {children}
         </AuthProvider>
