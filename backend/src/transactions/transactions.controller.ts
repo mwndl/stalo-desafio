@@ -34,6 +34,7 @@ import { SortBy, SortOrder } from './dto/sorting.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { TenantScopeInterceptor } from '../common/interceptors/tenant-scope.interceptor';
 import { TenantId } from '../common/decorators/tenant.decorator';
+import { UserId } from '../common/decorators/user.decorator';
 import {
   TransactionType,
   TransactionStatus,
@@ -262,8 +263,9 @@ export class TransactionsController {
     @Param('id') id: string,
     @Body() updateTransactionDto: UpdateTransactionDto,
     @TenantId() tenantId: string,
+    @UserId() userId: string,
   ): Promise<TransactionResponseDto> {
-    return this.transactionsService.update(id, updateTransactionDto, tenantId);
+    return this.transactionsService.update(id, updateTransactionDto, tenantId, userId);
   }
 
   @Delete(':id')
@@ -292,8 +294,9 @@ export class TransactionsController {
   async remove(
     @Param('id') id: string,
     @TenantId() tenantId: string,
+    @UserId() userId: string,
   ): Promise<{ message: string }> {
-    return this.transactionsService.remove(id, tenantId);
+    return this.transactionsService.remove(id, tenantId, userId);
   }
 
   @Get('documents/:filename')
