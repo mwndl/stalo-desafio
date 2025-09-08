@@ -46,6 +46,9 @@ export class Transaction {
   @Column({ type: 'date' })
   transactionDate: Date;
 
+  @Column({ nullable: true })
+  documentPath: string;
+
   @CreateDateColumn()
   createdAt: Date;
 

@@ -1,0 +1,113 @@
+import { Injectable, BadRequestException } from '@nestjs/common';
+import { S3Client, PutObjectCommand, GetObjectCommand, HeadObjectCommand } from '@aws-sdk/client-s3';
+import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
+import { MulterOptions } from '@nestjs/platform-express/multer/interfaces/multer-options.interface';
+import { memoryStorage } from 'multer';
+import { extname } from 'path';
+
+@Injectable()
+export class UploadService {
+  private readonly s3Client: S3Client;
+  private readonly bucketName: string;
+  private readonly maxFileSize = 5 * 1024 * 1024; // 5MB
+  private readonly allowedMimeTypes = [
+    'application/pdf',
+    'image/png',
+    'image/jpeg',
+    'image/jpg',
+  ];
+
+  constructor() {
+    this.s3Client = new S3Client({
+      endpoint: process.env.MINIO_ENDPOINT || 'http://localhost:9000',
+      region: 'us-east-1',
+      credentials: {
+        accessKeyId: process.env.MINIO_ACCESS_KEY || 'minioadmin',
+        secretAccessKey: process.env.MINIO_SECRET_KEY || 'minioadmin123',
+      },
+      forcePathStyle: true, // Importante para MinIO
+    });
+    this.bucketName = process.env.MINIO_BUCKET || 'stalo-documents';
+  }
+
+  getMulterConfig(): MulterOptions {
+    return {
+      storage: memoryStorage(), // Usar memory storage para MinIO
+      fileFilter: (req, file, cb) => {
+        if (this.allowedMimeTypes.includes(file.mimetype)) {
+          cb(null, true);
+        } else {
+          cb(new BadRequestException('Tipo de arquivo não permitido. Apenas PDF, PNG, JPG e JPEG são aceitos.'), false);
+        }
+      },
+      limits: {
+        fileSize: this.maxFileSize,
+      },
+    };
+  }
+
+  validateFile(file: Express.Multer.File): void {
+    if (!file) {
+      throw new BadRequestException('Arquivo não fornecido');
+    }
+
+    if (!this.allowedMimeTypes.includes(file.mimetype)) {
+      throw new BadRequestException('Tipo de arquivo não permitido. Apenas PDF, PNG, JPG e JPEG são aceitos.');
+    }
+
+    if (file.size > this.maxFileSize) {
+      throw new BadRequestException('Arquivo muito grande. Tamanho máximo permitido: 5MB');
+    }
+  }
+
+  async uploadToMinIO(file: Express.Multer.File, tenantId: string, userId: string): Promise<string> {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    const ext = extname(file.originalname);
+    const filename = `transaction-${uniqueSuffix}${ext}`;
+    
+    // Estrutura: tenantId/userId/filename (isolamento por tenant)
+    const key = `transactions/${tenantId}/${userId}/${filename}`;
+
+    const command = new PutObjectCommand({
+      Bucket: this.bucketName,
+      Key: key,
+      Body: file.buffer,
+      ContentType: file.mimetype,
+      Metadata: {
+        tenantId,
+        userId,
+        originalName: file.originalname,
+      },
+    });
+
+    await this.s3Client.send(command);
+    return key; // Retorna apenas a chave, não a URL completa
+  }
+
+  async getSignedDownloadUrl(key: string, expiresIn: number = 3600): Promise<string> {
+    const command = new GetObjectCommand({
+      Bucket: this.bucketName,
+      Key: key,
+    });
+
+    return getSignedUrl(this.s3Client, command, { expiresIn });
+  }
+
+  async getFileMetadata(key: string): Promise<any> {
+    const command = new HeadObjectCommand({
+      Bucket: this.bucketName,
+      Key: key,
+    });
+
+    return this.s3Client.send(command);
+  }
+
+  // Métodos de compatibilidade (para não quebrar código existente)
+  getRelativePath(filename: string): string {
+    return filename; // Agora retorna a chave do MinIO
+  }
+
+  getFilePath(filename: string): string {
+    return filename; // Agora retorna a chave do MinIO
+  }
+}

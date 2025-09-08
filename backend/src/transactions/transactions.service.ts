@@ -25,6 +25,9 @@ export class TransactionsService extends TenantAwareService<Transaction> {
   ): Promise<TransactionResponseDto> {
     const transaction = this.repository.create({
       ...createTransactionDto,
+      amount: typeof createTransactionDto.amount === 'string' 
+        ? parseFloat(createTransactionDto.amount) 
+        : createTransactionDto.amount,
       tenantId,
       userId,
       transactionDate: new Date(createTransactionDto.transactionDate),
@@ -213,6 +216,7 @@ export class TransactionsService extends TenantAwareService<Transaction> {
       deletedAt: transaction.deletedAt,
       tenantId: transaction.tenantId,
       userId: transaction.userId,
+      documentPath: transaction.documentPath,
     };
   }
 }

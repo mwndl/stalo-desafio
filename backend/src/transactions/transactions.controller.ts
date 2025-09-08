@@ -1,5 +1,6 @@
-import { Controller, Get, Post, Put, Delete, Body, Param, Query, UseGuards, UseInterceptors, Request } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
+import { Controller, Get, Post, Put, Delete, Body, Param, Query, UseGuards, UseInterceptors, Request, UseInterceptors as UseFileInterceptors, UploadedFile, Res, StreamableFile } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiQuery, ApiConsumes } from '@nestjs/swagger';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { TransactionsService } from './transactions.service';
 import { CreateTransactionDto } from './dto/create-transaction.dto';
 import { UpdateTransactionDto } from './dto/update-transaction.dto';
@@ -11,6 +12,9 @@ import { TenantScopeInterceptor } from '../common/interceptors/tenant-scope.inte
 import { TenantId } from '../common/decorators/tenant.decorator';
 import { TransactionType, TransactionStatus } from '../entities/transaction.entity';
 import { User } from '../entities/user.entity';
+import { UploadService } from '../common/services/upload.service';
+import { FileAccessGuard } from '../common/guards/file-access.guard';
+import type { Response } from 'express';
 
 @ApiTags('transactions')
 @Controller('v1/transactions')
@@ -18,13 +22,29 @@ import { User } from '../entities/user.entity';
 @UseInterceptors(TenantScopeInterceptor)
 @ApiBearerAuth('JWT-auth')
 export class TransactionsController {
-  constructor(private readonly transactionsService: TransactionsService) {}
+  constructor(
+    private readonly transactionsService: TransactionsService,
+    private readonly uploadService: UploadService,
+  ) {}
 
   @Post()
+  @UseFileInterceptors(FileInterceptor('document', {
+    storage: require('multer').memoryStorage(),
+    fileFilter: (req, file, cb) => {
+      const allowedMimeTypes = ['application/pdf', 'image/png', 'image/jpeg', 'image/jpg'];
+      if (allowedMimeTypes.includes(file.mimetype)) {
+        cb(null, true);
+      } else {
+        cb(new Error('Tipo de arquivo não permitido'), false);
+      }
+    },
+    limits: { fileSize: 5 * 1024 * 1024 }, // 5MB
+  }))
   @ApiOperation({
     summary: 'Criar transação',
-    description: 'Cria uma nova transação para o tenant do usuário logado',
+    description: 'Cria uma nova transação para o tenant do usuário logado com documento opcional',
   })
+  @ApiConsumes('multipart/form-data')
   @ApiResponse({
     status: 201,
     description: 'Transação criada com sucesso',
@@ -36,10 +56,19 @@ export class TransactionsController {
   })
   async create(
     @Body() createTransactionDto: CreateTransactionDto,
+    @UploadedFile() file: Express.Multer.File,
     @TenantId() tenantId: string,
     @Request() req,
   ): Promise<TransactionResponseDto> {
     const user: User = req.user;
+    
+    // Se houver arquivo, validar e fazer upload para MinIO
+    if (file) {
+      this.uploadService.validateFile(file);
+      const minioKey = await this.uploadService.uploadToMinIO(file, tenantId, user.id);
+      createTransactionDto.documentPath = minioKey;
+    }
+    
     return this.transactionsService.create(createTransactionDto, tenantId, user.id);
   }
 
@@ -160,5 +189,34 @@ export class TransactionsController {
   })
   async remove(@Param('id') id: string, @TenantId() tenantId: string): Promise<{ message: string }> {
     return this.transactionsService.remove(id, tenantId);
+  }
+
+  @Get('documents/:filename')
+  @UseGuards(JwtAuthGuard, FileAccessGuard)
+  @ApiOperation({
+    summary: 'Baixar documento da transação',
+    description: 'Baixa um documento anexado a uma transação do tenant do usuário logado',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Arquivo retornado com sucesso',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Arquivo não encontrado',
+  })
+  @ApiResponse({
+    status: 403,
+    description: 'Acesso negado',
+  })
+  async downloadDocument(
+    @Param('filename') filename: string,
+    @Res() res: Response,
+  ): Promise<void> {
+    // O filename agora é a chave completa do MinIO
+    const signedUrl = await this.uploadService.getSignedDownloadUrl(filename);
+    
+    // Redirecionar para a URL assinada do MinIO
+    res.redirect(signedUrl);
   }
 }

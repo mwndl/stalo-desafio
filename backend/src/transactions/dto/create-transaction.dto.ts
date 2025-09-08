@@ -1,5 +1,6 @@
 import { IsString, IsNumber, IsEnum, IsOptional, IsDateString, MinLength, Min } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
+import { Transform } from 'class-transformer';
 import { TransactionType, TransactionStatus } from '../../entities/transaction.entity';
 
 export class CreateTransactionDto {
@@ -26,6 +27,7 @@ export class CreateTransactionDto {
     example: 5000.00,
     minimum: 0.01,
   })
+  @Transform(({ value }) => typeof value === 'string' ? parseFloat(value) : value)
   @IsNumber({ maxDecimalPlaces: 2 })
   @Min(0.01)
   amount: number;
@@ -64,4 +66,13 @@ export class CreateTransactionDto {
   })
   @IsDateString()
   transactionDate: string;
+
+  @ApiProperty({
+    description: 'Caminho do documento anexado',
+    example: 'uploads/transaction-123-1234567890-123456789.pdf',
+    required: false,
+  })
+  @IsString()
+  @IsOptional()
+  documentPath?: string;
 }

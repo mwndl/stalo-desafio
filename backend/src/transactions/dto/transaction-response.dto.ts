@@ -84,4 +84,11 @@ export class TransactionResponseDto {
     example: '123e4567-e89b-12d3-a456-426614174000',
   })
   userId: string;
+
+  @ApiProperty({
+    description: 'Caminho do documento anexado',
+    example: 'uploads/transaction-123-1234567890-123456789.pdf',
+    nullable: true,
+  })
+  documentPath: string | null;
 }
