@@ -25,11 +25,15 @@ services:
       - /app/.next
     environment:
       - NODE_ENV=development
+      - NEXT_TELEMETRY_DISABLED=1
+      - WATCHPACK_POLLING=true
     depends_on:
       - backend
       - postgres
     networks:
       - app-network
+    stdin_open: true
+    tty: true
 
   backend:
     build:
