@@ -147,10 +147,17 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   };
 
   const logout = () => {
+    console.log('=== AUTH CONTEXT: LOGOUT INICIADO ===');
+    
+    // Limpar localStorage
     localStorage.removeItem('access_token');
     localStorage.removeItem('refresh_token');
     localStorage.removeItem('user');
+    
+    // Limpar estado
     setUser(null);
+    
+    console.log('=== AUTH CONTEXT: LOGOUT CONCLUÍDO ===');
   };
 
   const value: AuthContextType = {
