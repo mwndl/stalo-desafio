@@ -1,9 +1,15 @@
 @import url('https://fonts.googleapis.com/css2?family=Lufga:wght@300;400;500;600;700&display=swap');
 
 * {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+/* Reset específico para elementos que precisam de padding/margin zero */
+html, body, div, span, h1, h2, h3, h4, h5, h6, p, a, img, ul, ol, li, form, input, button {
   margin: 0 !important;
   padding: 0 !important;
-  box-sizing: border-box !important;
 }
 
 html, body {
