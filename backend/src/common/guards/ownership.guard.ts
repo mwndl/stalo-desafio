@@ -8,8 +8,8 @@ export class OwnershipGuard implements CanActivate {
   constructor(private reflector: Reflector) {}
 
   canActivate(context: ExecutionContext): boolean {
-    const request = context.switchToHttp().getRequest<Request>();
-    const user: User = request.user;
+    const request = context.switchToHttp().getRequest<Request & { user: User }>();
+    const user: User | undefined = request.user;
 
     if (!user) {
       throw new ForbiddenException('Usuário não autenticado');

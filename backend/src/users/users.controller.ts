@@ -1,88 +1,54 @@
-import { Controller, Get, Post, Put, Delete, Body, Param, UseGuards, UseInterceptors } from '@nestjs/common';
+import { Controller, Get, Put, Body, UseGuards, Request } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { UsersService } from './users.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
-import { TenantScopeInterceptor } from '../common/interceptors/tenant-scope.interceptor';
-import { TenantId } from '../common/decorators/tenant.decorator';
 import { User } from '../entities/user.entity';
 
 @ApiTags('users')
 @Controller('v1/users')
 @UseGuards(JwtAuthGuard)
-@UseInterceptors(TenantScopeInterceptor)
 @ApiBearerAuth('JWT-auth')
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
-  @Get()
+  @Get('profile')
   @ApiOperation({
-    summary: 'Listar usuários do tenant',
-    description: 'Retorna todos os usuários ativos do tenant do usuário logado',
+    summary: 'Obter perfil do usuário logado',
+    description: 'Retorna os dados do usuário autenticado',
   })
   @ApiResponse({
     status: 200,
-    description: 'Lista de usuários retornada com sucesso',
-    type: [User],
-  })
-  async findAll(@TenantId() tenantId: string): Promise<User[]> {
-    return this.usersService.findAll(tenantId);
-  }
-
-  @Get(':id')
-  @ApiOperation({
-    summary: 'Obter usuário por ID',
-    description: 'Retorna um usuário específico do tenant do usuário logado',
-  })
-  @ApiResponse({
-    status: 200,
-    description: 'Usuário encontrado',
+    description: 'Perfil do usuário retornado com sucesso',
     type: User,
   })
   @ApiResponse({
-    status: 404,
-    description: 'Usuário não encontrado',
+    status: 401,
+    description: 'Token JWT inválido ou expirado',
   })
-  async findOne(@Param('id') id: string, @TenantId() tenantId: string): Promise<User> {
-    return this.usersService.findOne(id, tenantId);
+  async getProfile(@Request() req): Promise<User> {
+    const user: User = req.user;
+    return this.usersService.findOne(user.id);
   }
 
-  @Put(':id')
+  @Put('profile')
   @ApiOperation({
-    summary: 'Atualizar usuário',
-    description: 'Atualiza um usuário do tenant do usuário logado',
+    summary: 'Atualizar perfil do usuário logado',
+    description: 'Atualiza os dados do usuário autenticado',
   })
   @ApiResponse({
     status: 200,
-    description: 'Usuário atualizado com sucesso',
+    description: 'Perfil atualizado com sucesso',
     type: User,
   })
   @ApiResponse({
-    status: 404,
-    description: 'Usuário não encontrado',
+    status: 401,
+    description: 'Token JWT inválido ou expirado',
   })
-  async update(
-    @Param('id') id: string,
+  async updateProfile(
+    @Request() req,
     @Body() updateData: Partial<User>,
-    @TenantId() tenantId: string,
   ): Promise<User> {
-    return this.usersService.update(id, updateData, tenantId);
-  }
-
-  @Delete(':id')
-  @ApiOperation({
-    summary: 'Desativar usuário',
-    description: 'Desativa um usuário do tenant do usuário logado',
-  })
-  @ApiResponse({
-    status: 200,
-    description: 'Usuário desativado com sucesso',
-  })
-  @ApiResponse({
-    status: 404,
-    description: 'Usuário não encontrado',
-  })
-  async remove(@Param('id') id: string, @TenantId() tenantId: string): Promise<{ message: string }> {
-    await this.usersService.remove(id, tenantId);
-    return { message: 'Usuário desativado com sucesso' };
+    const user: User = req.user;
+    return this.usersService.update(user.id, updateData);
   }
 }

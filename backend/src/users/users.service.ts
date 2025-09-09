@@ -2,29 +2,25 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { User } from '../entities/user.entity';
-import { TenantAwareService } from '../common/services/tenant-aware.service';
 import { AppException } from '../common/exceptions/app.exception';
 
 @Injectable()
-export class UsersService extends TenantAwareService<User> {
+export class UsersService {
   constructor(
     @InjectRepository(User)
     public readonly repository: Repository<User>,
-  ) {
-    super();
-  }
+  ) {}
 
-  async findAll(tenantId: string): Promise<User[]> {
+  async findAll(): Promise<User[]> {
     return this.repository.find({
-      where: { tenantId, isActive: true },
-      relations: ['tenant'],
+      where: { isActive: true },
+      order: { createdAt: 'DESC' },
     });
   }
 
-  async findOne(id: string, tenantId: string): Promise<User> {
+  async findOne(id: string): Promise<User> {
     const user = await this.repository.findOne({
-      where: { id, tenantId, isActive: true },
-      relations: ['tenant'],
+      where: { id, isActive: true },
     });
 
     if (!user) {
@@ -34,25 +30,21 @@ export class UsersService extends TenantAwareService<User> {
     return user;
   }
 
-  async findByEmail(email: string, tenantId: string): Promise<User | null> {
+  async findByEmail(email: string): Promise<User | null> {
     return this.repository.findOne({
-      where: { email, tenantId, isActive: true },
-      relations: ['tenant'],
+      where: { email, isActive: true },
     });
   }
 
-  async update(id: string, updateData: Partial<User>, tenantId: string): Promise<User> {
-    const user = await this.findOne(id, tenantId);
+  async update(id: string, updateData: Partial<User>): Promise<User> {
+    const user = await this.findOne(id);
     
-    // Garantir que o tenantId não seja alterado
-    const { tenantId: _, ...safeUpdateData } = updateData;
-    
-    await this.repository.update(id, safeUpdateData);
-    return this.findOne(id, tenantId);
+    await this.repository.update(id, updateData);
+    return this.findOne(id);
   }
 
-  async remove(id: string, tenantId: string): Promise<void> {
-    const user = await this.findOne(id, tenantId);
+  async remove(id: string): Promise<void> {
+    const user = await this.findOne(id);
     await this.repository.update(id, { isActive: false });
   }
 }

@@ -80,11 +80,6 @@ export class TransactionResponseDto {
   })
   deletedAt: Date | null;
 
-  @ApiProperty({
-    description: 'ID do tenant',
-    example: '123e4567-e89b-12d3-a456-426614174000',
-  })
-  tenantId: string;
 
   @ApiProperty({
     description: 'ID do usuário',
@@ -97,5 +92,5 @@ export class TransactionResponseDto {
     example: 'uploads/transaction-123-1234567890-123456789.pdf',
     nullable: true,
   })
-  documentPath: string | null;
+  documentPath?: string;
 }

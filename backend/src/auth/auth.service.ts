@@ -3,7 +3,6 @@ import { JwtService } from '@nestjs/jwt';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { User } from '../entities/user.entity';
-import { Tenant } from '../entities/tenant.entity';
 import { RefreshToken } from '../entities/refresh-token.entity';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
@@ -18,8 +17,6 @@ export class AuthService {
   constructor(
     @InjectRepository(User)
     private userRepository: Repository<User>,
-    @InjectRepository(Tenant)
-    private tenantRepository: Repository<Tenant>,
     @InjectRepository(RefreshToken)
     private refreshTokenRepository: Repository<RefreshToken>,
     private jwtService: JwtService,
@@ -28,7 +25,6 @@ export class AuthService {
   async validateUser(email: string, password: string): Promise<User | null> {
     const user = await this.userRepository.findOne({
       where: { email, isActive: true },
-      relations: ['tenant'],
     });
 
     if (user && await bcrypt.compare(password, user.password)) {
@@ -54,21 +50,11 @@ export class AuthService {
         id: user.id,
         email: user.email,
         name: user.name,
-        tenantId: user.tenantId,
       },
     };
   }
 
   async register(registerDto: RegisterDto): Promise<AuthResponseDto> {
-    // Verificar se o tenant existe
-    const tenant = await this.tenantRepository.findOne({
-      where: { id: registerDto.tenantId },
-    });
-
-    if (!tenant) {
-      throw AppException.tenantNotFound();
-    }
-
     // Verificar se o email já existe
     const existingUser = await this.userRepository.findOne({
       where: { email: registerDto.email },
@@ -86,7 +72,6 @@ export class AuthService {
       email: registerDto.email,
       name: registerDto.name,
       password: hashedPassword,
-      tenantId: registerDto.tenantId,
       isActive: true,
     });
 
@@ -102,7 +87,6 @@ export class AuthService {
         id: savedUser.id,
         email: savedUser.email,
         name: savedUser.name,
-        tenantId: savedUser.tenantId,
       },
     };
   }
@@ -110,7 +94,6 @@ export class AuthService {
   async getProfile(userId: string): Promise<User> {
     const user = await this.userRepository.findOne({
       where: { id: userId, isActive: true },
-      relations: ['tenant'],
     });
 
     if (!user) {
@@ -125,7 +108,6 @@ export class AuthService {
     const accessPayload = {
       sub: user.id,
       email: user.email,
-      tenantId: user.tenantId,
       type: 'access',
     };
     const accessToken = this.jwtService.sign(accessPayload, { expiresIn: '15m' });

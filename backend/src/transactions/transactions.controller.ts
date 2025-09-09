@@ -13,6 +13,7 @@ import {
   UseInterceptors as UseFileInterceptors,
   UploadedFile,
   Res,
+  BadRequestException,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -21,6 +22,7 @@ import {
   ApiBearerAuth,
   ApiQuery,
   ApiConsumes,
+  ApiBody,
 } from '@nestjs/swagger';
 import { FileInterceptor } from '@nestjs/platform-express';
 import * as multer from 'multer';
@@ -32,8 +34,7 @@ import { TransactionResponseDto } from './dto/transaction-response.dto';
 import { TransactionQueryDto } from './dto/transaction-query.dto';
 import { SortBy, SortOrder } from './dto/sorting.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
-import { TenantScopeInterceptor } from '../common/interceptors/tenant-scope.interceptor';
-import { TenantId } from '../common/decorators/tenant.decorator';
+import { UserId } from '../common/decorators/user.decorator';
 import {
   TransactionType,
   TransactionStatus,
@@ -47,7 +48,6 @@ import type { Response } from 'express';
 @ApiTags('transactions')
 @Controller('v1/transactions')
 @UseGuards(JwtAuthGuard)
-@UseInterceptors(TenantScopeInterceptor)
 @ApiBearerAuth('JWT-auth')
 export class TransactionsController {
   constructor(
@@ -78,7 +78,7 @@ export class TransactionsController {
   @ApiOperation({
     summary: 'Criar transação',
     description:
-      'Cria uma nova transação para o tenant do usuário logado com documento opcional',
+      'Cria uma nova transação para o usuário logado com documento opcional',
   })
   @ApiConsumes('multipart/form-data')
   @ApiResponse({
@@ -93,7 +93,6 @@ export class TransactionsController {
   async create(
     @Body() createTransactionDto: CreateTransactionDto,
     @UploadedFile() file: Express.Multer.File,
-    @TenantId() tenantId: string,
     @Request() req,
   ): Promise<TransactionResponseDto> {
     const user: User = req.user;
@@ -103,7 +102,6 @@ export class TransactionsController {
       this.uploadService.validateFile(file);
       const minioKey = await this.uploadService.uploadToMinIO(
         file,
-        tenantId,
         user.id,
       );
       createTransactionDto.documentPath = minioKey;
@@ -111,7 +109,6 @@ export class TransactionsController {
 
     return this.transactionsService.create(
       createTransactionDto,
-      tenantId,
       user.id,
     );
   }
@@ -120,12 +117,10 @@ export class TransactionsController {
   @ApiOperation({
     summary: 'Listar transações',
     description:
-      'Retorna todas as transações do tenant do usuário logado com filtros, paginação e ordenação',
+      'Retorna todas as transações do usuário logado com filtros, paginação e ordenação',
   })
   @ApiQuery({ name: 'type', enum: TransactionType, required: false })
   @ApiQuery({ name: 'status', enum: TransactionStatus, required: false })
-  @ApiQuery({ name: 'category', required: false })
-  @ApiQuery({ name: 'userId', required: false })
   @ApiQuery({
     name: 'cpf',
     required: false,
@@ -182,23 +177,23 @@ export class TransactionsController {
   })
   async findAll(
     @Query() query: TransactionQueryDto,
-    @TenantId() tenantId: string,
+    @Request() req,
   ): Promise<PaginatedResponseDto<TransactionResponseDto>> {
     const { page, limit, sortBy, order, ...filters } = query;
+    const user: User = req.user;
     return this.transactionsService.findAll(
-      tenantId,
       filters,
       { page, limit },
       { sortBy, order },
+      user.id,
     );
   }
 
   @Get('summary')
   @ApiOperation({
     summary: 'Resumo financeiro',
-    description: 'Retorna resumo financeiro das transações do tenant',
+    description: 'Retorna resumo financeiro das transações do usuário',
   })
-  @ApiQuery({ name: 'userId', required: false })
   @ApiResponse({
     status: 200,
     description: 'Resumo financeiro retornado com sucesso',
@@ -213,16 +208,63 @@ export class TransactionsController {
     },
   })
   async getSummary(
-    @Query('userId') userId?: string,
-    @TenantId() tenantId?: string,
+    @Request() req,
   ) {
-    return this.transactionsService.getSummary(tenantId!, userId);
+    const user: User = req.user;
+    return this.transactionsService.getSummary(user.id);
+  }
+
+  @Get('documents')
+  @ApiOperation({
+    summary: 'Baixar documento da transação',
+    description: 'Baixa um documento anexado a uma transação do usuário logado',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Arquivo retornado com sucesso',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Arquivo não encontrado',
+  })
+  @ApiResponse({
+    status: 403,
+    description: 'Acesso negado',
+  })
+  async downloadDocument(
+    @Query('path') path: string,
+    @Request() req,
+    @Res() res: Response,
+  ): Promise<void> {
+    if (!path) {
+      res.status(400).json({ message: 'Path parameter is required' });
+      return;
+    }
+
+    const user: User = req.user;
+    
+    try {
+      // Verificar se o arquivo pertence ao usuário
+      if (!path.startsWith(`transactions/${user.id}/`)) {
+        res.status(403).json({ message: 'Access denied' });
+        return;
+      }
+
+      // Gerar URL assinada para download
+      const downloadUrl = await this.uploadService.getSignedDownloadUrl(path, 3600); // 1 hora
+      
+      // Redirecionar para a URL assinada
+      res.redirect(downloadUrl);
+    } catch (error) {
+      console.error('Error downloading document:', error);
+      res.status(404).json({ message: 'File not found' });
+    }
   }
 
   @Get(':id')
   @ApiOperation({
     summary: 'Obter transação por ID',
-    description: 'Retorna uma transação específica do tenant do usuário logado',
+    description: 'Retorna uma transação específica do usuário logado',
   })
   @ApiResponse({
     status: 200,
@@ -235,15 +277,16 @@ export class TransactionsController {
   })
   async findOne(
     @Param('id') id: string,
-    @TenantId() tenantId: string,
+    @Request() req,
   ): Promise<TransactionResponseDto> {
-    return this.transactionsService.findOne(id, tenantId);
+    const user: User = req.user;
+    return this.transactionsService.findOne(id, user.id);
   }
 
   @Put(':id')
   @ApiOperation({
     summary: 'Atualizar transação',
-    description: 'Atualiza uma transação do tenant do usuário logado',
+    description: 'Atualiza uma transação do usuário logado',
   })
   @ApiResponse({
     status: 200,
@@ -261,16 +304,109 @@ export class TransactionsController {
   async update(
     @Param('id') id: string,
     @Body() updateTransactionDto: UpdateTransactionDto,
-    @TenantId() tenantId: string,
+    @Request() req,
   ): Promise<TransactionResponseDto> {
-    return this.transactionsService.update(id, updateTransactionDto, tenantId);
+    const user: User = req.user;
+    return this.transactionsService.update(id, updateTransactionDto, user.id);
+  }
+
+  @Post(':id/document')
+  @UseInterceptors(FileInterceptor('document'))
+  @ApiOperation({
+    summary: 'Fazer upload de documento para transação',
+    description: 'Faz upload de um documento para uma transação existente do usuário logado',
+  })
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    description: 'Arquivo do documento',
+    schema: {
+      type: 'object',
+      properties: {
+        document: {
+          type: 'string',
+          format: 'binary',
+          description: 'Arquivo PDF ou imagem (JPG, PNG)',
+        },
+      },
+      required: ['document'],
+    },
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Documento enviado com sucesso',
+    schema: {
+      type: 'object',
+      properties: {
+        message: { type: 'string', example: 'Documento enviado com sucesso' },
+        documentPath: { type: 'string', example: 'transactions/user-123/transaction-456-document.pdf' },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Arquivo inválido ou transação não encontrada',
+  })
+  async uploadDocument(
+    @Param('id') id: string,
+    @UploadedFile() file: Express.Multer.File,
+    @Request() req,
+  ): Promise<{ message: string; documentPath: string }> {
+    const user: User = req.user;
+
+    if (!file) {
+      throw new BadRequestException('Nenhum arquivo foi enviado');
+    }
+
+    // Validar arquivo
+    this.uploadService.validateFile(file);
+
+    // Fazer upload para MinIO
+    const minioKey = await this.uploadService.uploadToMinIO(
+      file,
+      `transactions/${user.id}`,
+    );
+
+    // Atualizar transação com o caminho do documento
+    await this.transactionsService.updateDocumentPath(id, user.id, minioKey);
+
+    return {
+      message: 'Documento enviado com sucesso',
+      documentPath: minioKey,
+    };
+  }
+
+  @Delete(':id/document')
+  @ApiOperation({
+    summary: 'Remover documento de transação',
+    description: 'Remove o documento de uma transação do usuário logado',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Documento removido com sucesso',
+    schema: {
+      type: 'object',
+      properties: {
+        message: { type: 'string', example: 'Documento removido com sucesso' },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Transação não encontrada',
+  })
+  async removeDocument(
+    @Param('id') id: string,
+    @Request() req,
+  ): Promise<{ message: string }> {
+    const user: User = req.user;
+    return this.transactionsService.removeDocument(id, user.id);
   }
 
   @Delete(':id')
   @ApiOperation({
     summary: 'Excluir transação (soft delete)',
     description:
-      'Exclui uma transação do tenant do usuário logado (soft delete)',
+      'Exclui uma transação do usuário logado (soft delete)',
   })
   @ApiResponse({
     status: 200,
@@ -291,38 +427,10 @@ export class TransactionsController {
   })
   async remove(
     @Param('id') id: string,
-    @TenantId() tenantId: string,
+    @Request() req,
   ): Promise<{ message: string }> {
-    return this.transactionsService.remove(id, tenantId);
+    const user: User = req.user;
+    return this.transactionsService.remove(id, user.id);
   }
 
-  @Get('documents/:filename')
-  @UseGuards(JwtAuthGuard, FileAccessGuard)
-  @ApiOperation({
-    summary: 'Baixar documento da transação',
-    description:
-      'Baixa um documento anexado a uma transação do tenant do usuário logado',
-  })
-  @ApiResponse({
-    status: 200,
-    description: 'Arquivo retornado com sucesso',
-  })
-  @ApiResponse({
-    status: 404,
-    description: 'Arquivo não encontrado',
-  })
-  @ApiResponse({
-    status: 403,
-    description: 'Acesso negado',
-  })
-  async downloadDocument(
-    @Param('filename') filename: string,
-    @Res() res: Response,
-  ): Promise<void> {
-    // O filename agora é a chave completa do MinIO
-    const signedUrl = await this.uploadService.getSignedDownloadUrl(filename);
-
-    // Redirecionar para a URL assinada do MinIO
-    res.redirect(signedUrl);
-  }
 }

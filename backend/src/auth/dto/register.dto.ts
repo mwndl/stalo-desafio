@@ -31,11 +31,4 @@ export class RegisterDto {
   @MinLength(6)
   password: string;
 
-  @ApiProperty({
-    description: 'ID do tenant',
-    example: '123e4567-e89b-12d3-a456-426614174000',
-  })
-  @IsString()
-  @IsNotEmpty()
-  tenantId: string;
 }

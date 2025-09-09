@@ -1,5 +1,4 @@
 import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, ManyToOne, JoinColumn } from 'typeorm';
-import { Tenant } from './tenant.entity';
 import { User } from './user.entity';
 
 export enum TransactionType {
@@ -40,17 +39,17 @@ export class Transaction {
   })
   status: TransactionStatus;
 
-  @Column({ nullable: true })
-  category: string;
-
   @Column({ type: 'date' })
   transactionDate: Date;
 
   @Column({ nullable: true })
-  cpf: string;
+  category: string;
 
   @Column({ nullable: true })
-  documentPath: string;
+  cpf: string;
+
+  @Column({ type: 'varchar', nullable: true })
+  documentPath?: string;
 
   @CreateDateColumn()
   createdAt: Date;
@@ -61,12 +60,6 @@ export class Transaction {
   @Column({ nullable: true })
   deletedAt: Date;
 
-  @ManyToOne(() => Tenant, tenant => tenant.transactions)
-  @JoinColumn({ name: 'tenantId' })
-  tenant: Tenant;
-
-  @Column()
-  tenantId: string;
 
   @ManyToOne(() => User, user => user.transactions)
   @JoinColumn({ name: 'userId' })

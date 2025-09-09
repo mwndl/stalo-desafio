@@ -19,11 +19,6 @@ export class UserDto {
   })
   name: string;
 
-  @ApiProperty({
-    description: 'ID do tenant do usuário',
-    example: 'e609bb39-2936-48dd-a7b5-e370188a8146',
-  })
-  tenantId: string;
 }
 
 export class AuthResponseDto {

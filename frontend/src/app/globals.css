@@ -1,26 +1,31 @@
-@import "tailwindcss";
+@import url('https://fonts.googleapis.com/css2?family=Lufga:wght@300;400;500;600;700&display=swap');
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+/* Reset específico para elementos que precisam de padding/margin zero */
+html, body, div, span, h1, h2, h3, h4, h5, h6, p, a, img, ul, ol, li, form, input, button {
+  margin: 0 !important;
+  padding: 0 !important;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html, body {
+  height: 100% !important;
+  width: 100% !important;
+  overflow-x: hidden !important;
+  font-family: 'Lufga', system-ui, -apple-system, sans-serif !important;
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+#__next {
+  height: 100% !important;
+  width: 100% !important;
+}
+
+/* Animação do spinner */
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
 }
