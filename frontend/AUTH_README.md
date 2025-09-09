@@ -51,7 +51,7 @@ Este documento descreve o sistema de autenticação implementado no frontend do 
 O sistema salva os seguintes dados no localStorage:
 - `access_token`: Token de acesso JWT
 - `refresh_token`: Token de refresh JWT
-- `user`: Dados do usuário (id, email, name, tenantId)
+- `user`: Dados do usuário (id, email, name)
 
 ## Como Usar
 

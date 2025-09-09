@@ -16,7 +16,6 @@ interface Transaction {
   cpf: string;
   createdAt: string;
   updatedAt: string;
-  tenantId: string;
   userId: string;
 }
 

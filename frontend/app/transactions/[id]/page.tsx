@@ -26,7 +26,6 @@ interface Transaction {
   documentPath?: string;
   createdAt: string;
   updatedAt: string;
-  tenantId: string;
   userId: string;
   creatorName?: string;
   creatorEmail?: string;

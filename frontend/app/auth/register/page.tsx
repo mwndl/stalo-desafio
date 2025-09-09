@@ -15,8 +15,7 @@ export default function RegisterPage() {
     email: '',
     name: '',
     password: '',
-    confirmPassword: '',
-    tenantId: ''
+    confirmPassword: ''
   });
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
@@ -46,10 +45,6 @@ export default function RegisterPage() {
       return;
     }
 
-    if (!formData.tenantId) {
-      setError('ID do tenant é obrigatório');
-      return;
-    }
 
     setIsLoading(true);
 
@@ -57,9 +52,10 @@ export default function RegisterPage() {
       await register({
         name: formData.name,
         email: formData.email,
-        password: formData.password,
-        tenantId: formData.tenantId
+        password: formData.password
       });
+      // Redirecionar para o dashboard após registro bem-sucedido
+      router.push('/dashboard');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Erro ao criar conta');
     } finally {
@@ -252,66 +248,6 @@ export default function RegisterPage() {
                 </div>
               </div>
 
-              {/* Tenant ID */}
-              <div style={{ width: '100%' }}>
-                <label htmlFor="tenantId" style={lufgaStyle({ 
-                  display: 'block', 
-                  fontSize: '14px', 
-                  fontWeight: '500', 
-                  color: '#374151', 
-                  marginBottom: '8px'
-                })}>
-                  ID do Tenant
-                </label>
-                <div style={{ position: 'relative', width: '100%' }}>
-                  <div style={{
-                    position: 'absolute',
-                    top: '50%',
-                    left: '12px',
-                    transform: 'translateY(-50%)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    pointerEvents: 'none'
-                  }}>
-                    <svg style={{ height: '20px', width: '20px', color: '#9ca3af' }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-                    </svg>
-                  </div>
-                  <input
-                    id="tenantId"
-                    name="tenantId"
-                    type="text"
-                    required
-                    style={lufgaStyle({
-                      display: 'block',
-                      width: '100%',
-                      paddingLeft: '40px',
-                      paddingRight: '12px',
-                      paddingTop: '12px',
-                      paddingBottom: '12px',
-                      border: '1px solid #d1d5db',
-                      borderRadius: '8px',
-                      fontSize: '16px',
-                      color: '#111827',
-                      backgroundColor: 'white',
-                      outline: 'none',
-                      transition: 'all 0.2s',
-                      boxSizing: 'border-box'
-                    })}
-                    placeholder="123e4567-e89b-12d3-a456-426614174000"
-                    value={formData.tenantId}
-                    onChange={handleInputChange}
-                    onFocus={(e) => {
-                      e.target.style.borderColor = '#000000';
-                      e.target.style.boxShadow = '0 0 0 3px rgba(0, 0, 0, 0.1)';
-                    }}
-                    onBlur={(e) => {
-                      e.target.style.borderColor = '#d1d5db';
-                      e.target.style.boxShadow = 'none';
-                    }}
-                  />
-                </div>
-              </div>
 
               {/* Senha */}
               <div style={{ width: '100%' }}>

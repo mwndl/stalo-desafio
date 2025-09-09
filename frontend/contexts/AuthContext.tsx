@@ -3,11 +3,18 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { User, AuthResponse, LoginCredentials } from '@/types/auth';
 
+export interface RegisterCredentials {
+  name: string;
+  email: string;
+  password: string;
+}
+
 interface AuthContextType {
   user: User | null;
   isAuthenticated: boolean;
   isLoading: boolean;
   login: (credentials: LoginCredentials) => Promise<void>;
+  register: (credentials: RegisterCredentials) => Promise<void>;
   logout: () => void;
 }
 
@@ -22,6 +29,7 @@ export const useAuth = () => {
       isAuthenticated: false,
       isLoading: true,
       login: async () => {},
+      register: async () => {},
       logout: () => {},
     };
   }
@@ -103,6 +111,41 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
+  const register = async (credentials: RegisterCredentials) => {
+    try {
+      console.log('=== AUTH CONTEXT: REGISTER INICIADO ===');
+      console.log('Credenciais recebidas:', credentials);
+      
+      // Fazer chamada real para o backend
+      const response = await fetch('http://localhost:3001/api/v1/auth/register', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(credentials),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Erro ao criar conta');
+      }
+
+      const authResponse: AuthResponse = await response.json();
+      console.log('Resposta do backend:', authResponse);
+
+      // Salvar tokens e dados do usuário no localStorage
+      localStorage.setItem('access_token', authResponse.access_token);
+      localStorage.setItem('refresh_token', authResponse.refresh_token);
+      localStorage.setItem('user', JSON.stringify(authResponse.user));
+
+      setUser(authResponse.user);
+      console.log('=== AUTH CONTEXT: REGISTER CONCLUÍDO ===');
+    } catch (error) {
+      console.error('=== AUTH CONTEXT: ERRO NO REGISTER ===', error);
+      throw error;
+    }
+  };
+
   const logout = () => {
     localStorage.removeItem('access_token');
     localStorage.removeItem('refresh_token');
@@ -115,6 +158,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     isAuthenticated,
     isLoading,
     login,
+    register,
     logout,
   };
 
