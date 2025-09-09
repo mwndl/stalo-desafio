@@ -81,6 +81,7 @@ services:
       - MAX_FILE_SIZE=10485760
       - HEALTH_CHECK_TIMEOUT=5000
       - MINIO_ENDPOINT=http://minio:9000
+      - MINIO_EXTERNAL_ENDPOINT=http://localhost:9000
       - MINIO_ACCESS_KEY=minioadmin
       - MINIO_SECRET_KEY=minioadmin123
       - MINIO_BUCKET=stalo-documents

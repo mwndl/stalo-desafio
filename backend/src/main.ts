@@ -103,7 +103,6 @@ async function bootstrap() {
       )
       .addTag('app', 'Endpoints básicos da aplicação')
       .addTag('auth', 'Endpoints de autenticação')
-      .addTag('users', 'Endpoints de usuários')
       .addTag('transactions', 'Endpoints de transações')
       .addTag('health', 'Endpoints de saúde da aplicação')
       .build();
