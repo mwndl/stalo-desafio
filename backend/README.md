@@ -1,98 +1,234 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+# Backend - Nest.js + PostgreSQL
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+Este é o backend da aplicação Stalo, desenvolvido com Nest.js e PostgreSQL. O sistema implementa uma arquitetura multi-tenant para gerenciamento de transações financeiras.
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+## 🚀 Tecnologias
 
-## Description
+- **Framework**: Nest.js
+- **Banco de Dados**: PostgreSQL
+- **ORM**: TypeORM
+- **Gerenciador de Pacotes**: pnpm
+- **Autenticação**: JWT
+- **Upload de Arquivos**: MinIO
+- **Arquitetura**: Multi-tenant
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+## 📁 Estrutura
 
-## Project setup
-
-```bash
-$ pnpm install
+```
+backend/
+├── src/
+│   ├── auth/                     # Módulo de autenticação
+│   ├── common/                   # Serviços e guards compartilhados
+│   ├── config/                   # Configurações do banco
+│   ├── entities/                 # Entidades do banco
+│   │   ├── user.entity.ts        # Entidade User
+│   │   ├── tenant.entity.ts      # Entidade Tenant
+│   │   ├── transaction.entity.ts # Entidade Transaction
+│   │   └── refresh-token.entity.ts
+│   ├── transactions/             # Módulo de transações
+│   ├── users/                    # Módulo de usuários
+│   ├── health/                   # Health check
+│   ├── seed/                     # Dados de seed
+│   └── main.ts                   # Arquivo principal
+├── Dockerfile                    # Docker para produção
+├── Dockerfile.dev                # Docker para desenvolvimento
+└── package.json
 ```
 
-## Compile and run the project
+## 🛠️ Desenvolvimento
+
+### Pré-requisitos
+
+- Node.js 18+
+- pnpm
+- PostgreSQL (ou Docker)
+
+### Configuração
+
+1. **Instalar dependências**
+   ```bash
+   pnpm install
+   ```
+
+2. **Configurar variáveis de ambiente**
+   ```bash
+   cp env.example .env
+   # Edite o arquivo .env com suas configurações
+   ```
+
+3. **Executar localmente**
+   ```bash
+   pnpm start:dev
+   ```
+
+### Com Docker
 
 ```bash
-# development
-$ pnpm run start
+# Desenvolvimento
+docker-compose -f docker-compose.dev.yml up --build
 
-# watch mode
-$ pnpm run start:dev
-
-# production mode
-$ pnpm run start:prod
+# Produção
+docker-compose up --build
 ```
 
-## Run tests
+## 🌐 Endpoints
+
+### Autenticação
+- `POST /v1/auth/login` - Login com email e senha
+- `POST /v1/auth/register` - Registro de novo usuário
+- `GET /v1/auth/me` - Dados do usuário logado
+- `POST /v1/auth/refresh` - Renovar token
+- `POST /v1/auth/logout` - Logout
+
+### Transações
+- `GET /v1/transactions` - Listar transações (com filtros e paginação)
+- `POST /v1/transactions` - Criar transação (com upload de documento)
+- `GET /v1/transactions/:id` - Obter transação por ID
+- `PUT /v1/transactions/:id` - Atualizar transação
+- `DELETE /v1/transactions/:id` - Excluir transação (soft delete)
+- `GET /v1/transactions/summary` - Resumo financeiro
+- `GET /v1/transactions/documents/:filename` - Download de documento
+
+### Health Check
+- `GET /health` - Status da aplicação
+
+### Seed
+- `POST /seed/run` - Executar seed do banco de dados
+
+### Exemplo de login:
 
 ```bash
-# unit tests
-$ pnpm run test
-
-# e2e tests
-$ pnpm run test:e2e
-
-# test coverage
-$ pnpm run test:cov
+curl -X POST http://localhost:3001/v1/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email": "john.smith@techcorp-solutions.com", "password": "password123"}'
 ```
 
-## Deployment
-
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
-
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
+### Exemplo de criação de transação:
 
 ```bash
-$ pnpm install -g @nestjs/mau
-$ mau deploy
+curl -X POST http://localhost:3001/v1/transactions \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <token>" \
+  -d '{
+    "title": "Salário mensal",
+    "amount": 5000.00,
+    "type": "income",
+    "transactionDate": "2025-01-01",
+    "cpf": "12345678901"
+  }'
 ```
 
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
+## 🗄️ Banco de Dados
 
-## Resources
+### Configuração
 
-Check out a few resources that may come in handy when working with NestJS:
+- **Host**: localhost (desenvolvimento) / postgres (Docker)
+- **Porta**: 5432
+- **Banco**: stalo_db
+- **Usuário**: stalo_user
+- **Senha**: stalo_password
 
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
+### Entidades
 
-## Support
+#### User
+- `id`: UUID (Primary Key)
+- `email`: string (unique)
+- `name`: string
+- `cpf`: string (unique, nullable)
+- `password`: string (nullable)
+- `isActive`: boolean
+- `tenantId`: UUID (Foreign Key)
+- `createdAt`: Date
+- `updatedAt`: Date
 
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
+#### Tenant
+- `id`: UUID (Primary Key)
+- `name`: string (unique)
+- `slug`: string (unique)
+- `description`: string (nullable)
+- `isActive`: boolean
+- `createdAt`: Date
+- `updatedAt`: Date
 
-## Stay in touch
+#### Transaction
+- `id`: UUID (Primary Key)
+- `title`: string
+- `description`: string (nullable)
+- `amount`: decimal(10,2)
+- `type`: enum (income, expense)
+- `status`: enum (processing, approved, rejected)
+- `category`: string (nullable)
+- `transactionDate`: date
+- `cpf`: string (nullable)
+- `documentPath`: string (nullable)
+- `tenantId`: UUID (Foreign Key)
+- `userId`: UUID (Foreign Key)
+- `createdAt`: Date
+- `updatedAt`: Date
+- `deletedAt`: Date (nullable, soft delete)
 
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
+#### RefreshToken
+- `id`: UUID (Primary Key)
+- `token`: string (unique)
+- `userId`: UUID (Foreign Key)
+- `expiresAt`: Date
+- `createdAt`: Date
 
-## License
+## ✨ Funcionalidades Implementadas
 
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+### Autenticação
+- ✅ Login com email e senha
+- ✅ Registro de usuários
+- ✅ JWT tokens (access + refresh)
+- ✅ Logout e logout de todos os dispositivos
+- ✅ Middleware de autenticação
+
+### Multi-tenant
+- ✅ Isolamento de dados por tenant
+- ✅ Interceptor para scope de tenant
+- ✅ Guards para verificação de tenant
+
+### Transações
+- ✅ CRUD completo de transações
+- ✅ Soft delete
+- ✅ Upload de documentos (PDF, imagens)
+- ✅ Filtros e paginação
+- ✅ Resumo financeiro
+- ✅ Verificação de ownership (usuário só pode editar/excluir suas transações)
+
+### Campos da Transação
+- ✅ ID (auto incremento)
+- ✅ Data de criação (created_at)
+- ✅ Usuário criador
+- ✅ Valor da transação
+- ✅ CPF do portador
+- ✅ Documento (upload)
+- ✅ Status (Em processamento, Aprovada, Negada)
+
+### Validações
+- ✅ Validação de tipos de arquivo
+- ✅ Limite de tamanho de arquivo (5MB)
+- ✅ Validação de dados de entrada
+- ✅ Tratamento de erros padronizado
+
+## 📝 Scripts
+
+- `pnpm start` - Inicia o servidor
+- `pnpm start:dev` - Inicia em modo desenvolvimento
+- `pnpm build` - Build para produção
+- `pnpm test` - Executa os testes
+
+## 🔧 Configuração do TypeORM
+
+O TypeORM está configurado para:
+- Sincronização automática em desenvolvimento
+- Logs habilitados em desenvolvimento
+- SSL configurado para produção
+- Entidades carregadas automaticamente
+
+## 🐳 Docker
+
+O backend está configurado para rodar com Docker:
+- **Desenvolvimento**: Hot reload habilitado
+- **Produção**: Build otimizado
+- **Banco**: PostgreSQL incluído no docker-compose

@@ -1,5 +1,5 @@
 # Multi-stage build para Nest.js
-FROM node:18-alpine AS base
+FROM node:20-alpine AS base
 
 # Instalar pnpm
 RUN npm install -g pnpm

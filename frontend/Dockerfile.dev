@@ -18,5 +18,9 @@ COPY . .
 # Expor porta
 EXPOSE 3000
 
+# Configurar variáveis de ambiente
+ENV NODE_ENV=development
+ENV NEXT_TELEMETRY_DISABLED=1
+
 # Comando para desenvolvimento
-CMD ["pnpm", "dev"]
+CMD ["pnpm", "dev", "--hostname", "0.0.0.0"]
