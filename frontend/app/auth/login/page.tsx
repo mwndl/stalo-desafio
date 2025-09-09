@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
+import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import { LoginCredentials } from '@/types/auth';
 
 export default function LoginPage() {
@@ -76,7 +77,7 @@ export default function LoginPage() {
         width: '100%',
         display: 'flex',
         flexDirection: 'column',
-        gap: '40px'
+        gap: '20px'
       }}>
         {/* Header */}
         <div style={{ textAlign: 'center' }}>
@@ -297,17 +298,16 @@ export default function LoginPage() {
               }}
             >
               {isLoading ? (
-                <div style={{ display: 'flex', alignItems: 'center' }}>
-                  <svg style={{ 
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <div style={{
+                    width: '16px',
+                    height: '16px',
+                    border: '2px solid transparent',
+                    borderTop: '2px solid white',
+                    borderRadius: '50%',
                     animation: 'spin 1s linear infinite',
-                    marginRight: '12px',
-                    height: '20px',
-                    width: '20px',
-                    color: 'white'
-                  }} fill="none" viewBox="0 0 24 24">
-                    <circle style={{ opacity: 0.25 }} cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path style={{ opacity: 0.75 }} fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                  </svg>
+                    WebkitAnimation: 'spin 1s linear infinite'
+                  }} />
                   Entrando...
                 </div>
               ) : (
@@ -317,9 +317,7 @@ export default function LoginPage() {
           </form>
 
           <div style={{ 
-            paddingTop: '32px', 
-            textAlign: 'center',
-            marginTop: '32px'
+            textAlign: 'center'
           }}>
             <p style={lufgaStyle({ fontSize: '14px', color: '#6b7280' })}>
               Não tem uma conta?{' '}
