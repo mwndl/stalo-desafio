@@ -8,11 +8,8 @@ import { getDatabaseConfig } from './config/database.config';
 import { User } from './entities/user.entity';
 import { Transaction } from './entities/transaction.entity';
 import { HealthModule } from './health/health.module';
-import { SeedModule } from './seed/seed.module';
 import { AuthModule } from './auth/auth.module';
-import { UsersModule } from './users/users.module';
 import { TransactionsModule } from './transactions/transactions.module';
-import { SeedService } from './seed/seed.service';
 
 @Module({
   imports: [
@@ -33,12 +30,10 @@ import { SeedService } from './seed/seed.service';
       },
     ]),
     HealthModule,
-    SeedModule,
     AuthModule,
-    UsersModule,
     TransactionsModule,
   ],
   controllers: [AppController],
-  providers: [AppService, SeedService],
+  providers: [AppService],
 })
 export class AppModule {}
