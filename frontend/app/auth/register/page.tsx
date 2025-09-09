@@ -369,7 +369,8 @@ export default function RegisterPage() {
                 backgroundColor: '#fef2f2',
                 border: '1px solid #fecaca',
                 borderRadius: '8px',
-                padding: '16px'
+                padding: '16px',
+                margin: 0
               }}>
                 <div style={{ display: 'flex' }}>
                   <div style={{ flexShrink: 0 }}>
@@ -377,8 +378,8 @@ export default function RegisterPage() {
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
                   </div>
-                  <div style={{ marginLeft: '12px' }}>
-                    <p style={lufgaStyle({ fontSize: '14px', color: '#991b1b' })}>{error}</p>
+                  <div style={{ marginLeft: '12px', margin: 0 }}>
+                    <p style={lufgaStyle({ fontSize: '14px', color: '#991b1b', margin: 0 })}>{error}</p>
                   </div>
                 </div>
               </div>
@@ -440,9 +441,7 @@ export default function RegisterPage() {
           </form>
 
           <div style={{ 
-            paddingTop: '32px', 
-            textAlign: 'center',
-            marginTop: '32px'
+            textAlign: 'center'
           }}>
             <p style={lufgaStyle({ fontSize: '14px', color: '#6b7280' })}>
               Já tem uma conta?{' '}
