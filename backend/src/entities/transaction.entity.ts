@@ -43,10 +43,13 @@ export class Transaction {
   transactionDate: Date;
 
   @Column({ nullable: true })
-  cpf: string;
+  category: string;
 
   @Column({ nullable: true })
-  documentPath: string;
+  cpf: string;
+
+  @Column({ type: 'varchar', nullable: true })
+  documentPath?: string;
 
   @CreateDateColumn()
   createdAt: Date;

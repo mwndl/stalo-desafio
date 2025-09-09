@@ -30,14 +30,6 @@ export class TransactionFiltersDto {
   category?: string;
 
   @ApiProperty({
-    description: 'ID do usuário',
-    required: false,
-  })
-  @IsUUID()
-  @IsOptional()
-  userId?: string;
-
-  @ApiProperty({
     description: 'CPF do usuário (busca exata)',
     example: '12345678901',
     required: false,

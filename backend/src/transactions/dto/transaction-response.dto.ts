@@ -92,5 +92,5 @@ export class TransactionResponseDto {
     example: 'uploads/transaction-123-1234567890-123456789.pdf',
     nullable: true,
   })
-  documentPath: string | null;
+  documentPath?: string;
 }
