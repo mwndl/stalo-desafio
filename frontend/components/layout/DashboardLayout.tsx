@@ -10,16 +10,25 @@ interface DashboardLayoutProps {
 
 export default function DashboardLayout({ children }: DashboardLayoutProps) {
   return (
-    <div className="h-screen flex overflow-hidden bg-gray-100">
+    <div style={{
+      height: '100vh',
+      display: 'flex',
+      backgroundColor: '#f9fafb'
+    }}>
       <Sidebar />
-      <div className="flex flex-col w-0 flex-1 overflow-hidden">
+      <div style={{
+        flex: 1,
+        display: 'flex',
+        flexDirection: 'column',
+        overflow: 'hidden'
+      }}>
         <Header />
-        <main className="flex-1 relative overflow-y-auto focus:outline-none">
-          <div className="py-6">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8">
-              {children}
-            </div>
-          </div>
+        <main style={{
+          flex: 1,
+          overflow: 'auto',
+          padding: '20px'
+        }}>
+          {children}
         </main>
       </div>
     </div>

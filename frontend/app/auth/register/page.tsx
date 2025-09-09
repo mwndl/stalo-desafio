@@ -21,7 +21,7 @@ export default function RegisterPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const router = useRouter();
-  const { login } = useAuth();
+  const { register } = useAuth();
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -54,31 +54,12 @@ export default function RegisterPage() {
     setIsLoading(true);
 
     try {
-      const response = await fetch('http://localhost:3001/api/v1/auth/register', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          email: formData.email,
-          name: formData.name,
-          password: formData.password,
-          tenantId: formData.tenantId
-        }),
+      await register({
+        name: formData.name,
+        email: formData.email,
+        password: formData.password,
+        tenantId: formData.tenantId
       });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Erro ao criar conta');
-      }
-
-      const data = await response.json();
-      
-      // Fazer login automaticamente após registro
-      await login(data.email, formData.password);
-      
-      // Redirecionar para dashboard
-      router.push('/dashboard');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Erro ao criar conta');
     } finally {
@@ -101,9 +82,15 @@ export default function RegisterPage() {
       right: 0,
       bottom: 0
     }}>
-      <div style={{ maxWidth: '400px', width: '100%' }}>
+      <div style={{ 
+        maxWidth: '400px', 
+        width: '100%',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '40px'
+      }}>
         {/* Header */}
-        <div style={{ textAlign: 'center', marginBottom: '40px' }}>
+        <div style={{ textAlign: 'center' }}>
           <h1 style={lufgaStyle({ 
             fontSize: '32px', 
             fontWeight: '700', 
@@ -516,7 +503,11 @@ export default function RegisterPage() {
             </button>
           </form>
 
-          <div style={{ marginTop: '24px', textAlign: 'center' }}>
+          <div style={{ 
+            paddingTop: '32px', 
+            textAlign: 'center',
+            marginTop: '32px'
+          }}>
             <p style={lufgaStyle({ fontSize: '14px', color: '#6b7280' })}>
               Já tem uma conta?{' '}
               <a
@@ -540,7 +531,7 @@ export default function RegisterPage() {
         </div>
 
         {/* Footer */}
-        <div style={{ marginTop: '32px', textAlign: 'center' }}>
+        <div style={{ textAlign: 'center' }}>
           <p style={lufgaStyle({ fontSize: '12px', color: '#9ca3af' })}>
             © 2025 Stalo Challenge. Todos os direitos reservados.
           </p>

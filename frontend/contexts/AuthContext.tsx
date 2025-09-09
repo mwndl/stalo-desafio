@@ -59,27 +59,46 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const login = async (credentials: LoginCredentials) => {
     try {
-      // Simular chamada para API de login
-      // Em um projeto real, você faria uma chamada para o backend
-      const mockResponse: AuthResponse = {
-        access_token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-        refresh_token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-        user: {
-          id: "daec2e84-cab3-42af-8f64-22ca04fe7a6b",
-          email: credentials.email,
-          name: "John Smith",
-          tenantId: "e609bb39-2936-48dd-a7b5-e370188a8146"
-        }
-      };
+      console.log('=== AUTH CONTEXT: LOGIN INICIADO ===');
+      console.log('Credenciais recebidas:', credentials);
+      
+      // Fazer chamada real para o backend
+      const response = await fetch('http://localhost:3001/api/v1/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(credentials),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Erro ao fazer login');
+      }
+
+      const authResponse: AuthResponse = await response.json();
+      console.log('Resposta do backend:', authResponse);
+      console.log('Token completo:', authResponse.access_token);
+      console.log('Tamanho do token:', authResponse.access_token.length);
 
       // Salvar tokens e dados do usuário no localStorage
-      localStorage.setItem('access_token', mockResponse.access_token);
-      localStorage.setItem('refresh_token', mockResponse.refresh_token);
-      localStorage.setItem('user', JSON.stringify(mockResponse.user));
+      localStorage.setItem('access_token', authResponse.access_token);
+      localStorage.setItem('refresh_token', authResponse.refresh_token);
+      localStorage.setItem('user', JSON.stringify(authResponse.user));
+      
+      // Verificar se foi salvo corretamente
+      const savedToken = localStorage.getItem('access_token');
+      console.log('Token salvo no localStorage:', savedToken);
+      console.log('Tamanho do token salvo:', savedToken?.length);
 
-      setUser(mockResponse.user);
+      console.log('Dados salvos no localStorage');
+
+      setUser(authResponse.user);
+      console.log('Usuário definido no estado:', authResponse.user);
+      
+      console.log('=== AUTH CONTEXT: LOGIN CONCLUÍDO ===');
     } catch (error) {
-      console.error('Login error:', error);
+      console.error('=== AUTH CONTEXT: ERRO NO LOGIN ===', error);
       throw error;
     }
   };

@@ -24,15 +24,26 @@ export default function LoginPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    console.log('=== FORMULÁRIO SUBMETIDO ===');
+    console.log('Credenciais:', credentials);
+    console.log('isLoading antes:', isLoading);
+    
     setIsLoading(true);
     setError(null);
+    
+    console.log('isLoading depois:', true);
 
     try {
+      console.log('=== CHAMANDO FUNÇÃO LOGIN ===');
       await login(credentials);
+      console.log('=== LOGIN REALIZADO COM SUCESSO ===');
+      console.log('=== REDIRECIONANDO PARA DASHBOARD ===');
       router.push('/dashboard');
-    } catch {
+    } catch (error) {
+      console.error('=== ERRO NO LOGIN ===', error);
       setError('Erro ao fazer login. Verifique suas credenciais.');
     } finally {
+      console.log('=== FINALIZANDO LOADING ===');
       setIsLoading(false);
     }
   };
@@ -60,9 +71,15 @@ export default function LoginPage() {
       right: 0,
       bottom: 0
     }}>
-      <div style={{ maxWidth: '400px', width: '100%' }}>
+      <div style={{ 
+        maxWidth: '400px', 
+        width: '100%',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '40px'
+      }}>
         {/* Header */}
-        <div style={{ textAlign: 'center', marginBottom: '40px' }}>
+        <div style={{ textAlign: 'center' }}>
           <h1 style={lufgaStyle({ 
             fontSize: '32px', 
             fontWeight: '700', 
@@ -241,6 +258,12 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={isLoading}
+              onClick={(e) => {
+                console.log('=== BOTÃO CLICADO ===');
+                console.log('Evento:', e);
+                console.log('isLoading:', isLoading);
+                console.log('credentials:', credentials);
+              }}
               style={lufgaStyle({
                 width: '100%',
                 display: 'flex',
@@ -262,14 +285,14 @@ export default function LoginPage() {
               })}
               onMouseEnter={(e) => {
                 if (!isLoading) {
-                  e.target.style.background = '#333333';
-                  e.target.style.transform = 'scale(1.02)';
+                  (e.target as HTMLElement).style.background = '#333333';
+                  (e.target as HTMLElement).style.transform = 'scale(1.02)';
                 }
               }}
               onMouseLeave={(e) => {
                 if (!isLoading) {
-                  e.target.style.background = '#000000';
-                  e.target.style.transform = 'scale(1)';
+                  (e.target as HTMLElement).style.background = '#000000';
+                  (e.target as HTMLElement).style.transform = 'scale(1)';
                 }
               }}
             >
@@ -293,7 +316,11 @@ export default function LoginPage() {
             </button>
           </form>
 
-          <div style={{ marginTop: '24px', textAlign: 'center' }}>
+          <div style={{ 
+            paddingTop: '32px', 
+            textAlign: 'center',
+            marginTop: '32px'
+          }}>
             <p style={lufgaStyle({ fontSize: '14px', color: '#6b7280' })}>
               Não tem uma conta?{' '}
               <a
@@ -304,8 +331,8 @@ export default function LoginPage() {
                   textDecoration: 'none',
                   transition: 'color 0.2s'
                 })}
-                onMouseEnter={(e) => e.target.style.color = '#333333'}
-                onMouseLeave={(e) => e.target.style.color = '#000000'}
+                onMouseEnter={(e) => (e.target as HTMLElement).style.color = '#333333'}
+                onMouseLeave={(e) => (e.target as HTMLElement).style.color = '#000000'}
               >
                 Cadastre-se aqui
               </a>
@@ -314,7 +341,7 @@ export default function LoginPage() {
         </div>
 
         {/* Footer */}
-        <div style={{ marginTop: '32px', textAlign: 'center' }}>
+        <div style={{ textAlign: 'center' }}>
           <p style={lufgaStyle({ fontSize: '12px', color: '#9ca3af' })}>
             © 2025 Stalo Challenge. Todos os direitos reservados.
           </p>

@@ -9,21 +9,15 @@ export default function Home() {
   const router = useRouter();
   const [mounted, setMounted] = useState(false);
 
-  console.log('🏠 Home render:', { isAuthenticated, isLoading, mounted });
-
   useEffect(() => {
-    console.log('🏠 Definindo mounted como true');
     setMounted(true);
   }, []);
 
   useEffect(() => {
-    console.log('🏠 Home useEffect:', { isAuthenticated, mounted });
     if (mounted) {
       if (isAuthenticated) {
-        console.log('🏠 Usuário autenticado, redirecionando para /transactions');
         router.push('/transactions');
       } else {
-        console.log('🏠 Usuário não autenticado, redirecionando para /auth/login');
         router.push('/auth/login');
       }
     }
