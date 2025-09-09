@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import ProtectedRoute from '@/components/auth/ProtectedRoute';
+import LoadingSpinner from '@/components/ui/LoadingSpinner';
 
 // Helper para aplicar a fonte Lufga
 const lufgaStyle = (styles: React.CSSProperties) => ({
@@ -37,6 +38,18 @@ export default function DashboardPage() {
   const [recentTransactions, setRecentTransactions] = useState<Transaction[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
+  const [isMobile, setIsMobile] = useState(false);
+
+  // Verificar se é mobile
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
   // Carregar dados do dashboard
   useEffect(() => {
@@ -132,27 +145,8 @@ export default function DashboardPage() {
     return (
       <ProtectedRoute>
         <DashboardLayout>
-          <div style={{ 
-            display: 'flex', 
-            alignItems: 'center', 
-            justifyContent: 'center', 
-            height: '100%',
-            padding: '24px'
-          }}>
-            <div style={{ textAlign: 'center' }}>
-              <div style={{
-                width: '40px',
-                height: '40px',
-                border: '4px solid #f3f4f6',
-                borderTop: '4px solid #000000',
-                borderRadius: '50%',
-                animation: 'spin 1s linear infinite',
-                margin: '0 auto 16px'
-              }}></div>
-              <p style={lufgaStyle({ fontSize: '16px', color: '#6b7280' })}>
-                Carregando dashboard...
-              </p>
-            </div>
+          <div style={{ height: '100%', padding: '24px' }}>
+            <LoadingSpinner size="medium" />
           </div>
         </DashboardLayout>
       </ProtectedRoute>
@@ -162,7 +156,7 @@ export default function DashboardPage() {
   return (
     <ProtectedRoute>
       <DashboardLayout>
-        <div style={{ padding: '24px', height: '100%', overflow: 'auto' }}>
+        <div>
           <div style={{ marginBottom: '32px' }}>
             <h1 style={lufgaStyle({ 
               fontSize: '24px', 
@@ -184,9 +178,11 @@ export default function DashboardPage() {
           {/* Cards de Resumo */}
           <div style={{ 
             display: 'grid', 
-            gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', 
+            gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fit, minmax(280px, 1fr))', 
             gap: '24px',
-            marginBottom: '32px'
+            marginBottom: '32px',
+            width: '100%',
+            boxSizing: 'border-box'
           }}>
             {/* Saldo Total */}
             <div style={{
@@ -356,12 +352,12 @@ export default function DashboardPage() {
                   transition: 'all 0.2s'
                 })}
                 onMouseEnter={(e) => {
-                  e.target.style.backgroundColor = '#f9fafb';
-                  e.target.style.borderColor = '#9ca3af';
+                  e.currentTarget.style.backgroundColor = '#f9fafb';
+                  e.currentTarget.style.borderColor = '#9ca3af';
                 }}
                 onMouseLeave={(e) => {
-                  e.target.style.backgroundColor = 'white';
-                  e.target.style.borderColor = '#d1d5db';
+                  e.currentTarget.style.backgroundColor = 'white';
+                  e.currentTarget.style.borderColor = '#d1d5db';
                 }}
               >
                 Ver todas
@@ -395,10 +391,10 @@ export default function DashboardPage() {
                     transition: 'all 0.2s'
                   })}
                   onMouseEnter={(e) => {
-                    e.target.style.background = '#333333';
+                    e.currentTarget.style.background = '#333333';
                   }}
                   onMouseLeave={(e) => {
-                    e.target.style.background = '#000000';
+                    e.currentTarget.style.background = '#000000';
                   }}
                 >
                   <svg style={{ height: '20px', width: '20px', marginRight: '8px' }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -420,19 +416,26 @@ export default function DashboardPage() {
                       border: '1px solid #f3f4f6',
                       borderRadius: '8px',
                       cursor: 'pointer',
-                      transition: 'all 0.2s'
+                      transition: 'all 0.2s',
+                      flexDirection: isMobile ? 'column' : 'row',
+                      gap: isMobile ? '12px' : '0'
                     }}
                     onMouseEnter={(e) => {
-                      e.target.style.backgroundColor = '#f9fafb';
-                      e.target.style.borderColor = '#e5e7eb';
+                      e.currentTarget.style.backgroundColor = '#f9fafb';
+                      e.currentTarget.style.borderColor = '#e5e7eb';
                     }}
                     onMouseLeave={(e) => {
-                      e.target.style.backgroundColor = 'transparent';
-                      e.target.style.borderColor = '#f3f4f6';
+                      e.currentTarget.style.backgroundColor = '';
+                      e.currentTarget.style.borderColor = '#f3f4f6';
                     }}
                     onClick={() => router.push(`/transactions/${transaction.id}`)}
                   >
-                    <div style={{ display: 'flex', alignItems: 'center', flex: 1 }}>
+                    <div style={{ 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      flex: 1,
+                      width: isMobile ? '100%' : 'auto'
+                    }}>
                       <div style={{
                         width: '40px',
                         height: '40px',
@@ -441,7 +444,8 @@ export default function DashboardPage() {
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
-                        marginRight: '12px'
+                        marginRight: '12px',
+                        flexShrink: 0
                       }}>
                         <svg style={{ 
                           height: '20px', 
@@ -455,8 +459,16 @@ export default function DashboardPage() {
                           )}
                         </svg>
                       </div>
-                      <div style={{ flex: 1 }}>
-                        <p style={lufgaStyle({ fontSize: '14px', fontWeight: '500', color: '#000000', margin: '0 0 4px 0' })}>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <p style={lufgaStyle({ 
+                          fontSize: '14px', 
+                          fontWeight: '500', 
+                          color: '#000000', 
+                          margin: '0 0 4px 0',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          whiteSpace: 'nowrap'
+                        })}>
                           {transaction.title}
                         </p>
                         <p style={lufgaStyle({ fontSize: '12px', color: '#6b7280', margin: 0 })}>
@@ -464,7 +476,13 @@ export default function DashboardPage() {
                         </p>
                       </div>
                     </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    <div style={{ 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      gap: '12px',
+                      width: isMobile ? '100%' : 'auto',
+                      justifyContent: isMobile ? 'space-between' : 'flex-end'
+                    }}>
                       <span style={{
                         display: 'inline-block',
                         padding: '4px 8px',
@@ -472,7 +490,8 @@ export default function DashboardPage() {
                         fontSize: '12px',
                         fontWeight: '500',
                         backgroundColor: getStatusColor(transaction.status) + '20',
-                        color: getStatusColor(transaction.status)
+                        color: getStatusColor(transaction.status),
+                        flexShrink: 0
                       }}>
                         {getStatusLabel(transaction.status)}
                       </span>
@@ -480,7 +499,8 @@ export default function DashboardPage() {
                         fontSize: '16px', 
                         fontWeight: '600', 
                         color: transaction.type === 'income' ? '#16a34a' : '#dc2626',
-                        margin: 0
+                        margin: 0,
+                        whiteSpace: 'nowrap'
                       })}>
                         {transaction.type === 'income' ? '+' : '-'}{formatCurrency(transaction.amount)}
                       </p>
