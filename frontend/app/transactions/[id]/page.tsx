@@ -5,6 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import ProtectedRoute from '@/components/auth/ProtectedRoute';
 import DashboardLayout from '@/components/layout/DashboardLayout';
+import LoadingSpinner from '@/components/ui/LoadingSpinner';
 
 // Helper para aplicar a fonte Lufga
 const lufgaStyle = (styles: React.CSSProperties) => ({
@@ -27,8 +28,6 @@ interface Transaction {
   createdAt: string;
   updatedAt: string;
   userId: string;
-  creatorName?: string;
-  creatorEmail?: string;
 }
 
 export default function TransactionViewPage() {
@@ -123,15 +122,165 @@ export default function TransactionViewPage() {
     }
   };
 
+  const formatCPF = (cpf: string) => {
+    if (!cpf) return 'N/A';
+    
+    // Remove tudo que não é dígito
+    const numbers = cpf.replace(/\D/g, '');
+    
+    // Aplica a máscara do CPF: 000.000.000-00
+    if (numbers.length === 11) {
+      return numbers.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4');
+    }
+    
+    return cpf; // Retorna o CPF original se não tiver 11 dígitos
+  };
+
   const handleEdit = () => {
     router.push(`/transactions/${params.id}/edit`);
   };
 
-  const handleDelete = () => {
+  const handleDelete = async () => {
     if (confirm('Tem certeza que deseja excluir esta transação?')) {
-      // Implementar exclusão da transação
-      console.log('Excluir transação:', params.id);
-      router.push('/transactions');
+      try {
+        const token = localStorage.getItem('access_token');
+        if (!token) {
+          alert('Token de acesso não encontrado');
+          return;
+        }
+
+        const response = await fetch(`http://localhost:3001/api/v1/transactions/${params.id}`, {
+          method: 'DELETE',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.message || 'Erro ao excluir transação');
+        }
+
+        // Redirecionar para lista de transações
+        router.push('/transactions');
+      } catch (error) {
+        console.error('Erro ao excluir transação:', error);
+        alert('Erro ao excluir transação. Tente novamente.');
+      }
+    }
+  };
+
+  const handleDownloadDocument = async () => {
+    if (!transaction?.documentPath) return;
+
+    try {
+      const token = localStorage.getItem('access_token');
+      if (!token) {
+        alert('Token de acesso não encontrado');
+        return;
+      }
+
+      // Fazer requisição para o endpoint de download com o token
+      const response = await fetch(
+        `http://localhost:3001/api/v1/transactions/documents?path=${encodeURIComponent(transaction.documentPath)}`,
+        {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error('Erro ao baixar documento');
+      }
+
+      // Obter o blob do arquivo
+      const blob = await response.blob();
+      
+      // Criar URL temporária para o blob
+      const url = window.URL.createObjectURL(blob);
+      
+      // Criar elemento de link temporário para download
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `documento-${transaction.id}.pdf`; // Nome do arquivo
+      
+      // Adicionar ao DOM, clicar e remover
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      // Limpar URL temporária
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Erro ao baixar documento:', error);
+      alert('Erro ao baixar documento. Tente novamente.');
+    }
+  };
+
+  const handleUploadDocument = async (file: File) => {
+    try {
+      const token = localStorage.getItem('access_token');
+      if (!token) {
+        alert('Token de acesso não encontrado');
+        return;
+      }
+
+      const formData = new FormData();
+      formData.append('document', file);
+
+      const response = await fetch(`http://localhost:3001/api/v1/transactions/${params.id}/document`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Erro ao fazer upload do documento');
+      }
+
+      // Recarregar a transação para mostrar o documento
+      window.location.reload();
+    } catch (error) {
+      console.error('Erro ao fazer upload do documento:', error);
+      alert('Erro ao fazer upload do documento. Tente novamente.');
+    }
+  };
+
+  const handleRemoveDocument = async () => {
+    if (!confirm('Tem certeza que deseja remover o documento?')) {
+      return;
+    }
+
+    try {
+      const token = localStorage.getItem('access_token');
+      if (!token) {
+        alert('Token de acesso não encontrado');
+        return;
+      }
+
+      const response = await fetch(`http://localhost:3001/api/v1/transactions/${params.id}/document`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Erro ao remover documento');
+      }
+
+      // Recarregar a transação para remover o documento da tela
+      window.location.reload();
+    } catch (error) {
+      console.error('Erro ao remover documento:', error);
+      alert('Erro ao remover documento. Tente novamente.');
     }
   };
 
@@ -139,27 +288,8 @@ export default function TransactionViewPage() {
     return (
       <ProtectedRoute>
         <DashboardLayout>
-          <div style={{ 
-            display: 'flex', 
-            alignItems: 'center', 
-            justifyContent: 'center', 
-            height: '100%',
-            padding: '24px'
-          }}>
-            <div style={{ textAlign: 'center' }}>
-              <div style={{
-                width: '40px',
-                height: '40px',
-                border: '4px solid #f3f4f6',
-                borderTop: '4px solid #000000',
-                borderRadius: '50%',
-                animation: 'spin 1s linear infinite',
-                margin: '0 auto 16px'
-              }}></div>
-              <p style={lufgaStyle({ fontSize: '16px', color: '#6b7280' })}>
-                Carregando transação...
-              </p>
-            </div>
+          <div style={{ minHeight: '400px' }}>
+            <LoadingSpinner size="medium" />
           </div>
         </DashboardLayout>
       </ProtectedRoute>
@@ -174,8 +304,7 @@ export default function TransactionViewPage() {
             display: 'flex', 
             alignItems: 'center', 
             justifyContent: 'center', 
-            height: '100%',
-            padding: '24px'
+            minHeight: '400px'
           }}>
             <div style={{ textAlign: 'center' }}>
               <svg style={{ height: '48px', width: '48px', color: '#dc2626', margin: '0 auto 16px' }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -219,7 +348,7 @@ export default function TransactionViewPage() {
   return (
     <ProtectedRoute>
       <DashboardLayout>
-        <div style={{ padding: '24px', height: '100%', overflow: 'auto' }}>
+        <div>
           {/* Header */}
           <div style={{ marginBottom: '32px' }}>
             <div style={{ display: 'flex', alignItems: 'center', marginBottom: '16px' }}>
@@ -265,7 +394,7 @@ export default function TransactionViewPage() {
             </p>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '24px' }}>
             {/* Informações da Transação */}
             <div style={{
               backgroundColor: 'white',
@@ -316,7 +445,7 @@ export default function TransactionViewPage() {
                     CPF
                   </p>
                   <p style={lufgaStyle({ fontSize: '16px', color: '#000000', margin: 0 })}>
-                    {transaction.cpf || 'N/A'}
+                    {formatCPF(transaction.cpf)}
                   </p>
                 </div>
 
@@ -348,64 +477,27 @@ export default function TransactionViewPage() {
               </div>
             </div>
 
-            {/* Informações do Criador */}
-            <div style={{
-              backgroundColor: 'white',
-              borderRadius: '12px',
-              boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
-              padding: '24px',
-              border: '1px solid #e5e7eb'
-            }}>
-              <h2 style={lufgaStyle({ 
-                fontSize: '18px', 
-                fontWeight: '600', 
-                color: '#000000',
-                margin: '0 0 20px 0'
-              })}>
-                Criador da Transação
-              </h2>
-              
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                <div>
-                  <p style={lufgaStyle({ fontSize: '14px', color: '#6b7280', margin: '0 0 4px 0' })}>
-                    Nome
-                  </p>
-                  <p style={lufgaStyle({ fontSize: '16px', color: '#000000', margin: 0 })}>
-                    {transaction.creatorName || 'N/A'}
-                  </p>
-                </div>
-
-                <div>
-                  <p style={lufgaStyle({ fontSize: '14px', color: '#6b7280', margin: '0 0 4px 0' })}>
-                    Email
-                  </p>
-                  <p style={lufgaStyle({ fontSize: '16px', color: '#000000', margin: 0 })}>
-                    {transaction.creatorEmail || 'N/A'}
-                  </p>
-                </div>
-              </div>
-            </div>
           </div>
 
           {/* Documento */}
-          {transaction.documentPath && (
-            <div style={{
-              backgroundColor: 'white',
-              borderRadius: '12px',
-              boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
-              padding: '24px',
-              border: '1px solid #e5e7eb',
-              marginTop: '24px'
-            }}>
-              <h2 style={lufgaStyle({ 
-                fontSize: '18px', 
-                fontWeight: '600', 
-                color: '#000000',
-                margin: '0 0 20px 0'
-              })}>
-                Documento Anexado
-              </h2>
-              
+          <div style={{
+            backgroundColor: 'white',
+            borderRadius: '12px',
+            boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
+            padding: '24px',
+            border: '1px solid #e5e7eb',
+            marginTop: '24px'
+          }}>
+            <h2 style={lufgaStyle({ 
+              fontSize: '18px', 
+              fontWeight: '600', 
+              color: '#000000',
+              margin: '0 0 20px 0'
+            })}>
+              Documento
+            </h2>
+            
+            {transaction.documentPath ? (
               <div style={{
                 display: 'flex',
                 alignItems: 'center',
@@ -425,37 +517,101 @@ export default function TransactionViewPage() {
                     PDF • 245 KB
                   </p>
                 </div>
-                <a
-                  href={`http://localhost:3001/api/v1/transactions/documents/${transaction.documentPath}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  style={lufgaStyle({
-                    padding: '8px 16px',
-                    border: '1px solid #d1d5db',
-                    borderRadius: '6px',
-                    fontSize: '14px',
-                    fontWeight: '500',
-                    color: '#374151',
-                    background: 'white',
-                    cursor: 'pointer',
-                    transition: 'all 0.2s',
-                    textDecoration: 'none',
-                    display: 'inline-block'
-                  })}
-                  onMouseEnter={(e) => {
-                    (e.target as HTMLElement).style.backgroundColor = '#f3f4f6';
-                    (e.target as HTMLElement).style.borderColor = '#9ca3af';
-                  }}
-                  onMouseLeave={(e) => {
-                    (e.target as HTMLElement).style.backgroundColor = 'white';
-                    (e.target as HTMLElement).style.borderColor = '#d1d5db';
-                  }}
-                >
-                  Baixar
-                </a>
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <button
+                    onClick={handleDownloadDocument}
+                    style={lufgaStyle({
+                      padding: '8px 16px',
+                      border: '1px solid #d1d5db',
+                      borderRadius: '6px',
+                      fontSize: '14px',
+                      fontWeight: '500',
+                      color: '#374151',
+                      background: 'white',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s',
+                      display: 'inline-block'
+                    })}
+                    onMouseEnter={(e) => {
+                      (e.target as HTMLElement).style.backgroundColor = '#f3f4f6';
+                      (e.target as HTMLElement).style.borderColor = '#9ca3af';
+                    }}
+                    onMouseLeave={(e) => {
+                      (e.target as HTMLElement).style.backgroundColor = 'white';
+                      (e.target as HTMLElement).style.borderColor = '#d1d5db';
+                    }}
+                  >
+                    Baixar
+                  </button>
+                  <button
+                    onClick={handleRemoveDocument}
+                    style={lufgaStyle({
+                      padding: '8px 12px',
+                      border: '1px solid #dc2626',
+                      borderRadius: '6px',
+                      fontSize: '14px',
+                      fontWeight: '500',
+                      color: '#dc2626',
+                      background: 'white',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s',
+                      display: 'inline-block'
+                    })}
+                    onMouseEnter={(e) => {
+                      (e.target as HTMLElement).style.backgroundColor = '#fef2f2';
+                      (e.target as HTMLElement).style.borderColor = '#b91c1c';
+                    }}
+                    onMouseLeave={(e) => {
+                      (e.target as HTMLElement).style.backgroundColor = 'white';
+                      (e.target as HTMLElement).style.borderColor = '#dc2626';
+                    }}
+                  >
+                    ✕
+                  </button>
+                </div>
               </div>
-            </div>
-          )}
+            ) : (
+              <div style={{
+                border: '2px dashed #d1d5db',
+                borderRadius: '8px',
+                textAlign: 'center',
+                transition: 'all 0.2s',
+                cursor: 'pointer'
+              }}
+              onMouseEnter={(e) => {
+                (e.target as HTMLElement).style.borderColor = '#000000';
+                (e.target as HTMLElement).style.backgroundColor = '#f9fafb';
+              }}
+              onMouseLeave={(e) => {
+                (e.target as HTMLElement).style.borderColor = '#d1d5db';
+                (e.target as HTMLElement).style.backgroundColor = 'transparent';
+              }}
+              onClick={() => document.getElementById('document-upload')?.click()}
+              >
+                <input
+                  id="document-upload"
+                  type="file"
+                  accept=".pdf,.jpg,.jpeg,.png"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      handleUploadDocument(file);
+                    }
+                  }}
+                  style={{ display: 'none' }}
+                />
+                <svg style={{ height: '48px', width: '48px', color: '#9ca3af', margin: '0 auto 16px' }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                </svg>
+                <p style={lufgaStyle({ fontSize: '16px', fontWeight: '500', color: '#374151', margin: '0 0 8px 0' })}>
+                  Clique para fazer upload de um documento
+                </p>
+                <p style={lufgaStyle({ fontSize: '14px', color: '#6b7280', margin: 0 })}>
+                  PDF, JPG, PNG até 5MB
+                </p>
+              </div>
+            )}
+          </div>
 
           {/* Ações */}
           <div style={{

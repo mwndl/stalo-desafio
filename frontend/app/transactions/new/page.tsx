@@ -22,6 +22,7 @@ export default function NewTransactionPage() {
     type: 'income' as 'income' | 'expense',
     status: 'processing' as 'processing' | 'approved' | 'rejected',
     transactionDate: new Date().toISOString().split('T')[0],
+    cpf: '',
     document: null as File | null
   });
   const [isLoading, setIsLoading] = useState(false);
@@ -61,6 +62,30 @@ export default function NewTransactionPage() {
     setFormData(prev => ({
       ...prev,
       amount: formattedValue,
+    }));
+  };
+
+  const formatCPF = (value: string) => {
+    // Remove tudo que não é dígito
+    const numbers = value.replace(/\D/g, '');
+    
+    // Aplica a máscara do CPF: 000.000.000-00
+    if (numbers.length <= 3) {
+      return numbers;
+    } else if (numbers.length <= 6) {
+      return numbers.replace(/(\d{3})(\d+)/, '$1.$2');
+    } else if (numbers.length <= 9) {
+      return numbers.replace(/(\d{3})(\d{3})(\d+)/, '$1.$2.$3');
+    } else {
+      return numbers.replace(/(\d{3})(\d{3})(\d{3})(\d+)/, '$1.$2.$3-$4').substring(0, 14);
+    }
+  };
+
+  const handleCPFChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const formattedCPF = formatCPF(e.target.value);
+    setFormData(prev => ({
+      ...prev,
+      cpf: formattedCPF,
     }));
   };
 
@@ -117,6 +142,7 @@ export default function NewTransactionPage() {
       formDataToSend.append('type', formData.type);
       formDataToSend.append('status', formData.status);
       formDataToSend.append('transactionDate', formData.transactionDate);
+      formDataToSend.append('cpf', formData.cpf || '');
       
       if (formData.document) {
         formDataToSend.append('document', formData.document);
@@ -147,7 +173,7 @@ export default function NewTransactionPage() {
   return (
     <ProtectedRoute>
       <DashboardLayout>
-        <div style={{ padding: '24px', height: '100%', overflow: 'auto' }}>
+        <div>
           <div style={{ marginBottom: '32px' }}>
             <h1 style={lufgaStyle({ 
               fontSize: '24px', 
@@ -171,8 +197,7 @@ export default function NewTransactionPage() {
             borderRadius: '12px',
             boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
             padding: '32px',
-            border: '1px solid #e5e7eb',
-            maxWidth: '600px'
+            border: '1px solid #e5e7eb'
           }}>
             <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
               {/* Título da Transação */}
@@ -390,6 +415,48 @@ export default function NewTransactionPage() {
                 />
               </div>
 
+              {/* CPF */}
+              <div>
+                <label htmlFor="cpf" style={lufgaStyle({ 
+                  display: 'block', 
+                  fontSize: '14px', 
+                  fontWeight: '500', 
+                  color: '#374151', 
+                  marginBottom: '8px'
+                })}>
+                  CPF
+                </label>
+                <input
+                  id="cpf"
+                  name="cpf"
+                  type="text"
+                  style={lufgaStyle({
+                    display: 'block',
+                    width: '100%',
+                    padding: '12px',
+                    border: '1px solid #d1d5db',
+                    borderRadius: '8px',
+                    fontSize: '16px',
+                    color: '#111827',
+                    backgroundColor: 'white',
+                    outline: 'none',
+                    transition: 'all 0.2s',
+                    boxSizing: 'border-box'
+                  })}
+                  placeholder="000.000.000-00"
+                  value={formData.cpf}
+                  onChange={handleCPFChange}
+                  onFocus={(e) => {
+                    e.target.style.borderColor = '#000000';
+                    e.target.style.boxShadow = '0 0 0 3px rgba(0, 0, 0, 0.1)';
+                  }}
+                  onBlur={(e) => {
+                    e.target.style.borderColor = '#d1d5db';
+                    e.target.style.boxShadow = 'none';
+                  }}
+                />
+              </div>
+
 
               {/* Status */}
               <div>
@@ -460,7 +527,7 @@ export default function NewTransactionPage() {
                 }}
                 onMouseLeave={(e) => {
                   (e.target as HTMLElement).style.borderColor = '#d1d5db';
-                  (e.target as HTMLElement).style.backgroundColor = 'transparent';
+                  (e.target as HTMLElement).style.backgroundColor = '';
                 }}
                 onClick={() => document.getElementById('document')?.click()}
                 >
