@@ -37,6 +37,16 @@ export default function TransactionsPage() {
   const [totalItems, setTotalItems] = useState(0);
   const [itemsPerPage, setItemsPerPage] = useState(10);
 
+  // Estados para filtros
+  const [filters, setFilters] = useState({
+    type: '',
+    status: '',
+    cpf: '',
+    createdFrom: '',
+    createdTo: ''
+  });
+  const [showFilters, setShowFilters] = useState(false);
+
   // Verificar se é mobile
   useEffect(() => {
     const checkMobile = () => {
@@ -64,6 +74,13 @@ export default function TransactionsPage() {
           limit: itemsPerPage.toString(),
           sortBy: 'createdAt',
           order: 'desc'
+        });
+
+        // Adicionar filtros aos parâmetros
+        Object.entries(filters).forEach(([key, value]) => {
+          if (value) {
+            params.append(key, value);
+          }
         });
         
         const response = await fetch(`http://localhost:3001/api/v1/transactions?${params}`, {
@@ -100,7 +117,7 @@ export default function TransactionsPage() {
     };
 
     loadTransactions();
-  }, [currentPage, itemsPerPage]);
+  }, [currentPage, itemsPerPage, filters]);
 
   const formatCurrency = (value: string | number) => {
     const numValue = typeof value === 'string' ? parseFloat(value) : value;
@@ -182,6 +199,28 @@ export default function TransactionsPage() {
     }
   };
 
+  // Funções para filtros
+  const handleFilterChange = (key: string, value: string) => {
+    setFilters(prev => ({
+      ...prev,
+      [key]: value
+    }));
+    setCurrentPage(1); // Reset para primeira página ao filtrar
+  };
+
+  const clearFilters = () => {
+    setFilters({
+      type: '',
+      status: '',
+      cpf: '',
+      createdFrom: '',
+      createdTo: ''
+    });
+    setCurrentPage(1);
+  };
+
+  const hasActiveFilters = Object.values(filters).some(value => value !== '');
+
   if (isLoading) {
     return (
       <ProtectedRoute>
@@ -223,14 +262,379 @@ export default function TransactionsPage() {
     <ProtectedRoute>
       <DashboardLayout>
         <div>
-          <h1 style={{
-            fontSize: '24px',
-            fontWeight: '600',
-            margin: '0 0 30px 0',
-            fontFamily: "'Lufga', system-ui, sans-serif"
+          <div style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            marginBottom: '30px',
+            flexWrap: 'wrap',
+            gap: '16px'
           }}>
-            Transações
-          </h1>
+            <h1 style={{
+              fontSize: '24px',
+              fontWeight: '600',
+              margin: '0',
+              fontFamily: "'Lufga', system-ui, sans-serif"
+            }}>
+              Transações
+            </h1>
+            
+            <button
+              onClick={() => setShowFilters(!showFilters)}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                padding: '10px 16px',
+                border: '1px solid #d1d5db',
+                borderRadius: '8px',
+                backgroundColor: 'white',
+                color: '#374151',
+                fontSize: '14px',
+                fontWeight: '500',
+                fontFamily: "'Lufga', system-ui, sans-serif",
+                cursor: 'pointer',
+                transition: 'all 0.2s'
+              }}
+              onMouseEnter={(e) => {
+                (e.target as HTMLElement).style.borderColor = '#000000';
+                (e.target as HTMLElement).style.backgroundColor = '#f9fafb';
+              }}
+              onMouseLeave={(e) => {
+                (e.target as HTMLElement).style.borderColor = '#d1d5db';
+                (e.target as HTMLElement).style.backgroundColor = 'white';
+              }}
+            >
+              <svg style={{ width: '16px', height: '16px' }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.207A1 1 0 013 6.5V4z" />
+              </svg>
+              Filtros
+              {hasActiveFilters && (
+                <span style={{
+                  backgroundColor: '#dc2626',
+                  color: 'white',
+                  borderRadius: '50%',
+                  width: '18px',
+                  height: '18px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: '10px',
+                  fontWeight: '600'
+                }}>
+                  !
+                </span>
+              )}
+            </button>
+          </div>
+
+          {/* Filtros */}
+          {showFilters && (
+            <div style={{
+              backgroundColor: 'white',
+              border: '1px solid #e5e7eb',
+              borderRadius: '12px',
+              padding: '32px',
+              marginBottom: '32px',
+              fontFamily: "'Lufga', system-ui, sans-serif",
+              boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)'
+            }}>
+              {/* Header dos filtros */}
+              <div style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                marginBottom: '24px'
+              }}>
+                <h3 style={{
+                  fontSize: '18px',
+                  fontWeight: '600',
+                  color: '#111827',
+                  margin: 0
+                }}>
+                  Filtros
+                </h3>
+                {hasActiveFilters && (
+                  <span style={{
+                    backgroundColor: '#dc2626',
+                    color: 'white',
+                    borderRadius: '12px',
+                    padding: '4px 12px',
+                    fontSize: '12px',
+                    fontWeight: '600'
+                  }}>
+                    {Object.values(filters).filter(value => value !== '').length} filtro(s) ativo(s)
+                  </span>
+                )}
+              </div>
+
+              {/* Grid de filtros */}
+              <div style={{
+                display: 'grid',
+                gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fit, minmax(250px, 1fr))',
+                gap: '24px',
+                marginBottom: '32px'
+              }}>
+                {/* Filtro por Tipo */}
+                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                  <label style={{
+                    display: 'block',
+                    fontSize: '14px',
+                    fontWeight: '500',
+                    color: '#374151',
+                    marginBottom: '8px'
+                  }}>
+                    Tipo
+                  </label>
+                  <select
+                    value={filters.type}
+                    onChange={(e) => handleFilterChange('type', e.target.value)}
+                    style={{
+                      width: '100%',
+                      padding: '12px 16px',
+                      border: '1px solid #d1d5db',
+                      borderRadius: '8px',
+                      fontSize: '14px',
+                      fontFamily: "'Lufga', system-ui, sans-serif",
+                      outline: 'none',
+                      cursor: 'pointer',
+                      backgroundColor: 'white',
+                      transition: 'all 0.2s',
+                      boxSizing: 'border-box'
+                    }}
+                    onFocus={(e) => {
+                      e.target.style.borderColor = '#000000';
+                      e.target.style.boxShadow = '0 0 0 3px rgba(0, 0, 0, 0.1)';
+                    }}
+                    onBlur={(e) => {
+                      e.target.style.borderColor = '#d1d5db';
+                      e.target.style.boxShadow = 'none';
+                    }}
+                  >
+                    <option value="">Todos os tipos</option>
+                    <option value="income">Receita</option>
+                    <option value="expense">Despesa</option>
+                  </select>
+                </div>
+
+                {/* Filtro por Status */}
+                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                  <label style={{
+                    display: 'block',
+                    fontSize: '14px',
+                    fontWeight: '500',
+                    color: '#374151',
+                    marginBottom: '8px'
+                  }}>
+                    Status
+                  </label>
+                  <select
+                    value={filters.status}
+                    onChange={(e) => handleFilterChange('status', e.target.value)}
+                    style={{
+                      width: '100%',
+                      padding: '12px 16px',
+                      border: '1px solid #d1d5db',
+                      borderRadius: '8px',
+                      fontSize: '14px',
+                      fontFamily: "'Lufga', system-ui, sans-serif",
+                      outline: 'none',
+                      cursor: 'pointer',
+                      backgroundColor: 'white',
+                      transition: 'all 0.2s',
+                      boxSizing: 'border-box'
+                    }}
+                    onFocus={(e) => {
+                      e.target.style.borderColor = '#000000';
+                      e.target.style.boxShadow = '0 0 0 3px rgba(0, 0, 0, 0.1)';
+                    }}
+                    onBlur={(e) => {
+                      e.target.style.borderColor = '#d1d5db';
+                      e.target.style.boxShadow = 'none';
+                    }}
+                  >
+                    <option value="">Todos os status</option>
+                    <option value="approved">Aprovada</option>
+                    <option value="processing">Em processamento</option>
+                    <option value="rejected">Negada</option>
+                  </select>
+                </div>
+
+                {/* Filtro por CPF */}
+                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                  <label style={{
+                    display: 'block',
+                    fontSize: '14px',
+                    fontWeight: '500',
+                    color: '#374151',
+                    marginBottom: '8px'
+                  }}>
+                    CPF
+                  </label>
+                  <input
+                    type="text"
+                    value={filters.cpf}
+                    onChange={(e) => handleFilterChange('cpf', e.target.value)}
+                    placeholder="Digite o CPF"
+                    style={{
+                      width: '100%',
+                      padding: '12px 16px',
+                      border: '1px solid #d1d5db',
+                      borderRadius: '8px',
+                      fontSize: '14px',
+                      fontFamily: "'Lufga', system-ui, sans-serif",
+                      outline: 'none',
+                      backgroundColor: 'white',
+                      transition: 'all 0.2s',
+                      boxSizing: 'border-box'
+                    }}
+                    onFocus={(e) => {
+                      e.target.style.borderColor = '#000000';
+                      e.target.style.boxShadow = '0 0 0 3px rgba(0, 0, 0, 0.1)';
+                    }}
+                    onBlur={(e) => {
+                      e.target.style.borderColor = '#d1d5db';
+                      e.target.style.boxShadow = 'none';
+                    }}
+                  />
+                </div>
+
+                {/* Filtro por Data Inicial */}
+                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                  <label style={{
+                    display: 'block',
+                    fontSize: '14px',
+                    fontWeight: '500',
+                    color: '#374151',
+                    marginBottom: '8px'
+                  }}>
+                    Data Inicial
+                  </label>
+                  <input
+                    type="date"
+                    value={filters.createdFrom}
+                    onChange={(e) => handleFilterChange('createdFrom', e.target.value)}
+                    style={{
+                      width: '100%',
+                      padding: '12px 16px',
+                      border: '1px solid #d1d5db',
+                      borderRadius: '8px',
+                      fontSize: '14px',
+                      fontFamily: "'Lufga', system-ui, sans-serif",
+                      outline: 'none',
+                      backgroundColor: 'white',
+                      transition: 'all 0.2s',
+                      boxSizing: 'border-box'
+                    }}
+                    onFocus={(e) => {
+                      e.target.style.borderColor = '#000000';
+                      e.target.style.boxShadow = '0 0 0 3px rgba(0, 0, 0, 0.1)';
+                    }}
+                    onBlur={(e) => {
+                      e.target.style.borderColor = '#d1d5db';
+                      e.target.style.boxShadow = 'none';
+                    }}
+                  />
+                </div>
+
+                {/* Filtro por Data Final */}
+                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                  <label style={{
+                    display: 'block',
+                    fontSize: '14px',
+                    fontWeight: '500',
+                    color: '#374151',
+                    marginBottom: '8px'
+                  }}>
+                    Data Final
+                  </label>
+                  <input
+                    type="date"
+                    value={filters.createdTo}
+                    onChange={(e) => handleFilterChange('createdTo', e.target.value)}
+                    style={{
+                      width: '100%',
+                      padding: '12px 16px',
+                      border: '1px solid #d1d5db',
+                      borderRadius: '8px',
+                      fontSize: '14px',
+                      fontFamily: "'Lufga', system-ui, sans-serif",
+                      outline: 'none',
+                      backgroundColor: 'white',
+                      transition: 'all 0.2s',
+                      boxSizing: 'border-box'
+                    }}
+                    onFocus={(e) => {
+                      e.target.style.borderColor = '#000000';
+                      e.target.style.boxShadow = '0 0 0 3px rgba(0, 0, 0, 0.1)';
+                    }}
+                    onBlur={(e) => {
+                      e.target.style.borderColor = '#d1d5db';
+                      e.target.style.boxShadow = 'none';
+                    }}
+                  />
+                </div>
+              </div>
+
+              {/* Botões de ação dos filtros */}
+              <div style={{
+                display: 'flex',
+                justifyContent: 'flex-end',
+                gap: '16px',
+                paddingTop: '24px',
+                borderTop: '1px solid #f3f4f6'
+              }}>
+                <button
+                  onClick={clearFilters}
+                  style={{
+                    padding: '12px 24px',
+                    border: '1px solid #d1d5db',
+                    borderRadius: '8px',
+                    backgroundColor: 'white',
+                    color: '#374151',
+                    fontSize: '14px',
+                    fontWeight: '500',
+                    fontFamily: "'Lufga', system-ui, sans-serif",
+                    cursor: 'pointer',
+                    transition: 'all 0.2s'
+                  }}
+                  onMouseEnter={(e) => {
+                    (e.target as HTMLElement).style.borderColor = '#9ca3af';
+                    (e.target as HTMLElement).style.backgroundColor = '#f9fafb';
+                  }}
+                  onMouseLeave={(e) => {
+                    (e.target as HTMLElement).style.borderColor = '#d1d5db';
+                    (e.target as HTMLElement).style.backgroundColor = 'white';
+                  }}
+                >
+                  Limpar Filtros
+                </button>
+                <button
+                  onClick={() => setShowFilters(false)}
+                  style={{
+                    padding: '12px 24px',
+                    border: 'none',
+                    borderRadius: '8px',
+                    backgroundColor: '#000000',
+                    color: 'white',
+                    fontSize: '14px',
+                    fontWeight: '500',
+                    fontFamily: "'Lufga', system-ui, sans-serif",
+                    cursor: 'pointer',
+                    transition: 'all 0.2s'
+                  }}
+                  onMouseEnter={(e) => {
+                    (e.target as HTMLElement).style.backgroundColor = '#333333';
+                  }}
+                  onMouseLeave={(e) => {
+                    (e.target as HTMLElement).style.backgroundColor = '#000000';
+                  }}
+                >
+                  Aplicar Filtros
+                </button>
+              </div>
+            </div>
+          )}
 
           {transactions.length === 0 ? (
             <div style={{

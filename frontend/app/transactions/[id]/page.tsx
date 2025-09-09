@@ -574,6 +574,7 @@ export default function TransactionViewPage() {
               <div style={{
                 border: '2px dashed #d1d5db',
                 borderRadius: '8px',
+                padding: '24px',
                 textAlign: 'center',
                 transition: 'all 0.2s',
                 cursor: 'pointer'
