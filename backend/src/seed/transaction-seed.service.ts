@@ -13,12 +13,14 @@ export class TransactionSeedService {
     private userRepository: Repository<User>,
   ) {}
 
-  async seedTransactionsForUser(userId: string): Promise<{ message: string; transactionsCreated: number }> {
+  async seedTransactionsForUser(email: string): Promise<{ message: string; transactionsCreated: number }> {
     // Verificar se o usuário existe
-    const user = await this.userRepository.findOne({ where: { id: userId } });
+    const user = await this.userRepository.findOne({ where: { email } });
     if (!user) {
       throw new Error('Usuário não encontrado');
     }
+
+    const userId = user.id;
 
     // Buscar transações existentes do usuário
     const existingTransactions = await this.transactionRepository.find({
@@ -158,7 +160,7 @@ export class TransactionSeedService {
 
   private generateRandomCPF(): string {
     // Gerar CPF aleatório (apenas para exemplo)
-    const cpf = Math.floor(Math.random() * 900000000) + 100000000;
+    const cpf = Math.floor(Math.random() * 90000000000) + 10000000000;
     return cpf.toString();
   }
 

@@ -39,9 +39,6 @@ export class Transaction {
   })
   status: TransactionStatus;
 
-  @Column({ nullable: true })
-  category: string;
-
   @Column({ type: 'date' })
   transactionDate: Date;
 

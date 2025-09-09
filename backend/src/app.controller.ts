@@ -1,7 +1,7 @@
 import { Controller, Get, Post } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { AppService } from './app.service';
-import { User } from './entities/user.entity';
+import { UserResponseDto } from './dto/user-response.dto';
 
 @ApiTags('app')
 @Controller()
@@ -17,9 +17,9 @@ export class AppController {
   @ApiResponse({
     status: 200,
     description: 'Lista de usuários retornada com sucesso',
-    type: [User],
+    type: [UserResponseDto],
   })
-  async getUsers(): Promise<User[]> {
+  async getUsers(): Promise<UserResponseDto[]> {
     return this.appService.getUsers();
   }
 

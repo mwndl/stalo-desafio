@@ -90,7 +90,19 @@ export class UploadService {
       Key: key,
     });
 
-    return getSignedUrl(this.s3Client, command, { expiresIn });
+    // Criar um cliente S3 com o endpoint externo para gerar URL assinada válida
+    const externalEndpoint = process.env.MINIO_EXTERNAL_ENDPOINT || 'http://localhost:9000';
+    const externalS3Client = new S3Client({
+      endpoint: externalEndpoint,
+      region: 'us-east-1',
+      credentials: {
+        accessKeyId: process.env.MINIO_ACCESS_KEY || 'minioadmin',
+        secretAccessKey: process.env.MINIO_SECRET_KEY || 'minioadmin123',
+      },
+      forcePathStyle: true,
+    });
+
+    return getSignedUrl(externalS3Client, command, { expiresIn });
   }
 
   async getFileMetadata(key: string): Promise<any> {

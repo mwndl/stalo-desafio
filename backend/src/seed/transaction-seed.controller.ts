@@ -3,7 +3,7 @@ import { ApiTags, ApiOperation, ApiResponse, ApiBody } from '@nestjs/swagger';
 import { TransactionSeedService } from './transaction-seed.service';
 
 interface SeedTransactionsDto {
-  userId: string;
+  email: string;
 }
 
 @ApiTags('seed')
@@ -14,20 +14,20 @@ export class TransactionSeedController {
   @Post('transactions')
   @ApiOperation({
     summary: 'Criar transações aleatórias para um usuário',
-    description: 'Cria entre 5 e 10 transações aleatórias para o usuário especificado, evitando duplicatas',
+    description: 'Cria entre 5 e 10 transações aleatórias para o usuário especificado por email, evitando duplicatas',
   })
   @ApiBody({
-    description: 'ID do usuário para criar as transações',
+    description: 'Email do usuário para criar as transações',
     schema: {
       type: 'object',
       properties: {
-        userId: {
+        email: {
           type: 'string',
-          description: 'ID do usuário',
-          example: '3c42fb24-6bbf-4deb-bc7e-3d851550cd36'
+          description: 'Email do usuário',
+          example: 'maria@example.com'
         }
       },
-      required: ['userId']
+      required: ['email']
     }
   })
   @ApiResponse({
@@ -54,7 +54,7 @@ export class TransactionSeedController {
   })
   async seedTransactions(@Body() seedDto: SeedTransactionsDto) {
     try {
-      const result = await this.transactionSeedService.seedTransactionsForUser(seedDto.userId);
+      const result = await this.transactionSeedService.seedTransactionsForUser(seedDto.email);
       return result;
     } catch (error) {
       throw new HttpException(

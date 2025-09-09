@@ -22,6 +22,7 @@ import {
   ApiBearerAuth,
   ApiQuery,
   ApiConsumes,
+  ApiBody,
 } from '@nestjs/swagger';
 import { FileInterceptor } from '@nestjs/platform-express';
 import * as multer from 'multer';
@@ -53,6 +54,7 @@ export class TransactionsController {
     private readonly transactionsService: TransactionsService,
     private readonly uploadService: UploadService,
   ) {}
+
 
   @Post()
   @UseFileInterceptors(
@@ -112,6 +114,71 @@ export class TransactionsController {
     );
   }
 
+  @Post(':id/document')
+  @UseInterceptors(FileInterceptor('document'))
+  @ApiOperation({
+    summary: 'Fazer upload de documento para transação',
+    description: 'Faz upload de um documento para uma transação existente do usuário logado',
+  })
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    description: 'Arquivo do documento',
+    schema: {
+      type: 'object',
+      properties: {
+        document: {
+          type: 'string',
+          format: 'binary',
+          description: 'Arquivo PDF ou imagem (JPG, PNG)',
+        },
+      },
+      required: ['document'],
+    },
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Documento enviado com sucesso',
+    schema: {
+      type: 'object',
+      properties: {
+        message: { type: 'string', example: 'Documento enviado com sucesso' },
+        documentPath: { type: 'string', example: 'transactions/user-123/transaction-456-document.pdf' },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Arquivo inválido ou transação não encontrada',
+  })
+  async uploadDocument(
+    @Param('id') id: string,
+    @UploadedFile() file: Express.Multer.File,
+    @Request() req,
+  ): Promise<{ message: string; documentPath: string }> {
+    const user: User = req.user;
+
+    if (!file) {
+      throw new BadRequestException('Nenhum arquivo foi enviado');
+    }
+
+    // Validar arquivo
+    this.uploadService.validateFile(file);
+
+    // Fazer upload para MinIO
+    const minioKey = await this.uploadService.uploadToMinIO(
+      file,
+      `transactions/${user.id}`,
+    );
+
+    // Atualizar transação com o caminho do documento
+    await this.transactionsService.updateDocumentPath(id, user.id, minioKey);
+
+    return {
+      message: 'Documento enviado com sucesso',
+      documentPath: minioKey,
+    };
+  }
+
   @Get()
   @ApiOperation({
     summary: 'Listar transações',
@@ -120,6 +187,7 @@ export class TransactionsController {
   })
   @ApiQuery({ name: 'type', enum: TransactionType, required: false })
   @ApiQuery({ name: 'status', enum: TransactionStatus, required: false })
+  @ApiQuery({ name: 'category', required: false })
   @ApiQuery({ name: 'userId', required: false })
   @ApiQuery({
     name: 'cpf',
@@ -310,70 +378,6 @@ export class TransactionsController {
     return this.transactionsService.update(id, updateTransactionDto, user.id);
   }
 
-  @Post(':id/document')
-  @UseInterceptors(FileInterceptor('document'))
-  @ApiOperation({
-    summary: 'Fazer upload de documento para transação',
-    description: 'Faz upload de um documento para uma transação existente do usuário logado',
-  })
-  @ApiConsumes('multipart/form-data')
-  @ApiBody({
-    description: 'Arquivo do documento',
-    schema: {
-      type: 'object',
-      properties: {
-        document: {
-          type: 'string',
-          format: 'binary',
-          description: 'Arquivo PDF ou imagem (JPG, PNG)',
-        },
-      },
-      required: ['document'],
-    },
-  })
-  @ApiResponse({
-    status: 200,
-    description: 'Documento enviado com sucesso',
-    schema: {
-      type: 'object',
-      properties: {
-        message: { type: 'string', example: 'Documento enviado com sucesso' },
-        documentPath: { type: 'string', example: 'transactions/user-123/transaction-456-document.pdf' },
-      },
-    },
-  })
-  @ApiResponse({
-    status: 400,
-    description: 'Arquivo inválido ou transação não encontrada',
-  })
-  async uploadDocument(
-    @Param('id') id: string,
-    @UploadedFile() file: Express.Multer.File,
-    @Request() req,
-  ): Promise<{ message: string; documentPath: string }> {
-    const user: User = req.user;
-
-    if (!file) {
-      throw new BadRequestException('Nenhum arquivo foi enviado');
-    }
-
-    // Validar arquivo
-    this.uploadService.validateFile(file);
-
-    // Fazer upload para MinIO
-    const minioKey = await this.uploadService.uploadToMinIO(
-      file,
-      `transactions/${user.id}`,
-    );
-
-    // Atualizar transação com o caminho do documento
-    await this.transactionsService.updateDocumentPath(id, user.id, minioKey);
-
-    return {
-      message: 'Documento enviado com sucesso',
-      documentPath: minioKey,
-    };
-  }
 
   @Delete(':id/document')
   @ApiOperation({

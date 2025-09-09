@@ -69,9 +69,6 @@ export class TransactionsService {
     if (filters.status) {
       queryBuilder.andWhere('transaction.status = :status', { status: filters.status });
     }
-    if (filters.category) {
-      queryBuilder.andWhere('transaction.category = :category', { category: filters.category });
-    }
     if (filters.cpf) {
       queryBuilder.andWhere('user.cpf = :cpf', { cpf: filters.cpf });
     }
@@ -253,5 +250,33 @@ export class TransactionsService {
       userId: transaction.userId,
       documentPath: transaction.documentPath,
     };
+  }
+
+  async updateDocumentPath(transactionId: string, userId: string, documentPath: string): Promise<void> {
+    const transaction = await this.transactionRepository.findOne({
+      where: { id: transactionId, userId },
+    });
+
+    if (!transaction) {
+      throw new Error('Transação não encontrada');
+    }
+
+    transaction.documentPath = documentPath;
+    await this.transactionRepository.save(transaction);
+  }
+
+  async removeDocument(transactionId: string, userId: string): Promise<{ message: string }> {
+    const transaction = await this.transactionRepository.findOne({
+      where: { id: transactionId, userId },
+    });
+
+    if (!transaction) {
+      throw new Error('Transação não encontrada');
+    }
+
+    transaction.documentPath = null;
+    await this.transactionRepository.save(transaction);
+
+    return { message: 'Documento removido com sucesso' };
   }
 }
