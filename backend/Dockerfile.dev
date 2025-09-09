@@ -10,9 +10,9 @@ WORKDIR /app
 COPY package.json pnpm-lock.yaml* ./
 
 # Instalar dependências
-RUN pnpm install
+RUN pnpm install --frozen-lockfile
 
-# Copiar código fonte
+# Copiar código fonte (excluindo node_modules via .dockerignore)
 COPY . .
 
 # Expor porta
