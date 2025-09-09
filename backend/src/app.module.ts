@@ -6,7 +6,6 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { getDatabaseConfig } from './config/database.config';
 import { User } from './entities/user.entity';
-import { Tenant } from './entities/tenant.entity';
 import { Transaction } from './entities/transaction.entity';
 import { HealthModule } from './health/health.module';
 import { SeedModule } from './seed/seed.module';
@@ -26,7 +25,7 @@ import { SeedService } from './seed/seed.service';
       useFactory: getDatabaseConfig,
       inject: [ConfigService],
     }),
-    TypeOrmModule.forFeature([User, Tenant, Transaction]),
+    TypeOrmModule.forFeature([User, Transaction]),
     ThrottlerModule.forRoot([
       {
         ttl: 60000,

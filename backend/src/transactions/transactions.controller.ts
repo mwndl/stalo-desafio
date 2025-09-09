@@ -32,8 +32,6 @@ import { TransactionResponseDto } from './dto/transaction-response.dto';
 import { TransactionQueryDto } from './dto/transaction-query.dto';
 import { SortBy, SortOrder } from './dto/sorting.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
-import { TenantScopeInterceptor } from '../common/interceptors/tenant-scope.interceptor';
-import { TenantId } from '../common/decorators/tenant.decorator';
 import { UserId } from '../common/decorators/user.decorator';
 import {
   TransactionType,
@@ -48,7 +46,6 @@ import type { Response } from 'express';
 @ApiTags('transactions')
 @Controller('v1/transactions')
 @UseGuards(JwtAuthGuard)
-@UseInterceptors(TenantScopeInterceptor)
 @ApiBearerAuth('JWT-auth')
 export class TransactionsController {
   constructor(
@@ -79,7 +76,7 @@ export class TransactionsController {
   @ApiOperation({
     summary: 'Criar transação',
     description:
-      'Cria uma nova transação para o tenant do usuário logado com documento opcional',
+      'Cria uma nova transação para o usuário logado com documento opcional',
   })
   @ApiConsumes('multipart/form-data')
   @ApiResponse({
@@ -94,7 +91,6 @@ export class TransactionsController {
   async create(
     @Body() createTransactionDto: CreateTransactionDto,
     @UploadedFile() file: Express.Multer.File,
-    @TenantId() tenantId: string,
     @Request() req,
   ): Promise<TransactionResponseDto> {
     const user: User = req.user;
@@ -104,7 +100,6 @@ export class TransactionsController {
       this.uploadService.validateFile(file);
       const minioKey = await this.uploadService.uploadToMinIO(
         file,
-        tenantId,
         user.id,
       );
       createTransactionDto.documentPath = minioKey;
@@ -112,7 +107,6 @@ export class TransactionsController {
 
     return this.transactionsService.create(
       createTransactionDto,
-      tenantId,
       user.id,
     );
   }
@@ -121,7 +115,7 @@ export class TransactionsController {
   @ApiOperation({
     summary: 'Listar transações',
     description:
-      'Retorna todas as transações do tenant do usuário logado com filtros, paginação e ordenação',
+      'Retorna todas as transações do usuário logado com filtros, paginação e ordenação',
   })
   @ApiQuery({ name: 'type', enum: TransactionType, required: false })
   @ApiQuery({ name: 'status', enum: TransactionStatus, required: false })
@@ -183,11 +177,12 @@ export class TransactionsController {
   })
   async findAll(
     @Query() query: TransactionQueryDto,
-    @TenantId() tenantId: string,
+    @Request() req,
   ): Promise<PaginatedResponseDto<TransactionResponseDto>> {
     const { page, limit, sortBy, order, ...filters } = query;
+    const user: User = req.user;
     return this.transactionsService.findAll(
-      tenantId,
+      user.id,
       filters,
       { page, limit },
       { sortBy, order },
@@ -197,9 +192,8 @@ export class TransactionsController {
   @Get('summary')
   @ApiOperation({
     summary: 'Resumo financeiro',
-    description: 'Retorna resumo financeiro das transações do tenant',
+    description: 'Retorna resumo financeiro das transações do usuário',
   })
-  @ApiQuery({ name: 'userId', required: false })
   @ApiResponse({
     status: 200,
     description: 'Resumo financeiro retornado com sucesso',
@@ -214,16 +208,16 @@ export class TransactionsController {
     },
   })
   async getSummary(
-    @Query('userId') userId?: string,
-    @TenantId() tenantId?: string,
+    @Request() req,
   ) {
-    return this.transactionsService.getSummary(tenantId!, userId);
+    const user: User = req.user;
+    return this.transactionsService.getSummary(user.id);
   }
 
   @Get(':id')
   @ApiOperation({
     summary: 'Obter transação por ID',
-    description: 'Retorna uma transação específica do tenant do usuário logado',
+    description: 'Retorna uma transação específica do usuário logado',
   })
   @ApiResponse({
     status: 200,
@@ -236,15 +230,16 @@ export class TransactionsController {
   })
   async findOne(
     @Param('id') id: string,
-    @TenantId() tenantId: string,
+    @Request() req,
   ): Promise<TransactionResponseDto> {
-    return this.transactionsService.findOne(id, tenantId);
+    const user: User = req.user;
+    return this.transactionsService.findOne(id, user.id);
   }
 
   @Put(':id')
   @ApiOperation({
     summary: 'Atualizar transação',
-    description: 'Atualiza uma transação do tenant do usuário logado',
+    description: 'Atualiza uma transação do usuário logado',
   })
   @ApiResponse({
     status: 200,
@@ -262,17 +257,17 @@ export class TransactionsController {
   async update(
     @Param('id') id: string,
     @Body() updateTransactionDto: UpdateTransactionDto,
-    @TenantId() tenantId: string,
-    @UserId() userId: string,
+    @Request() req,
   ): Promise<TransactionResponseDto> {
-    return this.transactionsService.update(id, updateTransactionDto, tenantId, userId);
+    const user: User = req.user;
+    return this.transactionsService.update(id, updateTransactionDto, user.id);
   }
 
   @Delete(':id')
   @ApiOperation({
     summary: 'Excluir transação (soft delete)',
     description:
-      'Exclui uma transação do tenant do usuário logado (soft delete)',
+      'Exclui uma transação do usuário logado (soft delete)',
   })
   @ApiResponse({
     status: 200,
@@ -293,10 +288,10 @@ export class TransactionsController {
   })
   async remove(
     @Param('id') id: string,
-    @TenantId() tenantId: string,
-    @UserId() userId: string,
+    @Request() req,
   ): Promise<{ message: string }> {
-    return this.transactionsService.remove(id, tenantId, userId);
+    const user: User = req.user;
+    return this.transactionsService.remove(id, user.id);
   }
 
   @Get('documents/:filename')
@@ -304,7 +299,7 @@ export class TransactionsController {
   @ApiOperation({
     summary: 'Baixar documento da transação',
     description:
-      'Baixa um documento anexado a uma transação do tenant do usuário logado',
+      'Baixa um documento anexado a uma transação do usuário logado',
   })
   @ApiResponse({
     status: 200,

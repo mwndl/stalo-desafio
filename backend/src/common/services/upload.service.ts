@@ -61,13 +61,13 @@ export class UploadService {
     }
   }
 
-  async uploadToMinIO(file: Express.Multer.File, tenantId: string, userId: string): Promise<string> {
+  async uploadToMinIO(file: Express.Multer.File, userId: string): Promise<string> {
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
     const ext = extname(file.originalname);
     const filename = `transaction-${uniqueSuffix}${ext}`;
     
-    // Estrutura: tenantId/userId/filename (isolamento por tenant)
-    const key = `transactions/${tenantId}/${userId}/${filename}`;
+    // Estrutura: userId/filename (isolamento por usuário)
+    const key = `transactions/${userId}/${filename}`;
 
     const command = new PutObjectCommand({
       Bucket: this.bucketName,
@@ -75,7 +75,6 @@ export class UploadService {
       Body: file.buffer,
       ContentType: file.mimetype,
       Metadata: {
-        tenantId,
         userId,
         originalName: file.originalname,
       },

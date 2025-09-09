@@ -1,5 +1,4 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, ManyToOne, JoinColumn, OneToMany } from 'typeorm';
-import { Tenant } from './tenant.entity';
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, OneToMany } from 'typeorm';
 import { Transaction } from './transaction.entity';
 
 @Entity('users')
@@ -28,12 +27,6 @@ export class User {
   @UpdateDateColumn()
   updatedAt: Date;
 
-  @ManyToOne(() => Tenant, tenant => tenant.users)
-  @JoinColumn({ name: 'tenantId' })
-  tenant: Tenant;
-
-  @Column()
-  tenantId: string;
 
   @OneToMany(() => Transaction, transaction => transaction.user)
   transactions: Transaction[];

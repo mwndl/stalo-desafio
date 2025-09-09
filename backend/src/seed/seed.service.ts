@@ -1,16 +1,17 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { Tenant } from '../entities/tenant.entity';
 import { User } from '../entities/user.entity';
-import { Transaction, TransactionType, TransactionStatus } from '../entities/transaction.entity';
+import {
+  Transaction,
+  TransactionType,
+  TransactionStatus,
+} from '../entities/transaction.entity';
 import * as bcrypt from 'bcryptjs';
 
 @Injectable()
 export class SeedService {
   constructor(
-    @InjectRepository(Tenant)
-    private tenantRepository: Repository<Tenant>,
     @InjectRepository(User)
     private userRepository: Repository<User>,
     @InjectRepository(Transaction)
@@ -23,21 +24,13 @@ export class SeedService {
     // Clear existing data
     await this.clearDatabase();
 
-    // Create tenants
-    const tenants = await this.createTenants();
-    console.log(`✅ Created ${tenants.length} tenants`);
-
-    // Create users for each tenant
-    const allUsers: User[] = [];
-    for (const tenant of tenants) {
-      const users = await this.createUsersForTenant(tenant);
-      allUsers.push(...users);
-    }
-    console.log(`✅ Created ${allUsers.length} users`);
+    // Create users
+    const users = await this.createUsers();
+    console.log(`✅ Created ${users.length} users`);
 
     // Create transactions for each user
     let totalTransactions = 0;
-    for (const user of allUsers) {
+    for (const user of users) {
       const transactions = await this.createTransactionsForUser(user);
       totalTransactions += transactions.length;
     }
@@ -50,74 +43,44 @@ export class SeedService {
     // Delete in reverse order to respect foreign key constraints
     await this.transactionRepository.query('DELETE FROM transactions');
     await this.userRepository.query('DELETE FROM users');
-    await this.tenantRepository.query('DELETE FROM tenants');
     console.log('🧹 Cleared existing data');
   }
 
-  private async createTenants(): Promise<Tenant[]> {
-    const tenantData = [
-      {
-        name: 'TechCorp Solutions',
-        slug: 'techcorp-solutions',
-        description: 'Leading technology solutions provider',
-      },
-      {
-        name: 'Green Energy Co',
-        slug: 'green-energy-co',
-        description: 'Sustainable energy solutions',
-      },
-      {
-        name: 'Creative Agency',
-        slug: 'creative-agency',
-        description: 'Full-service creative marketing agency',
-      },
-    ];
-
-    const tenants: Tenant[] = [];
-    for (const data of tenantData) {
-      const tenant = this.tenantRepository.create(data);
-      const savedTenant = await this.tenantRepository.save(tenant);
-      tenants.push(savedTenant);
-    }
-
-    return tenants;
-  }
-
-  private async createUsersForTenant(tenant: Tenant): Promise<User[]> {
+  private async createUsers(): Promise<User[]> {
     const userData = [
       {
         name: 'John Smith',
-        email: `john.smith@${tenant.slug}.com`,
+        email: 'john.smith@example.com',
         cpf: '12345678901',
       },
       {
         name: 'Sarah Johnson',
-        email: `sarah.johnson@${tenant.slug}.com`,
+        email: 'sarah.johnson@example.com',
         cpf: '12345678902',
       },
       {
         name: 'Mike Wilson',
-        email: `mike.wilson@${tenant.slug}.com`,
+        email: 'mike.wilson@example.com',
         cpf: '12345678903',
       },
       {
         name: 'Emily Davis',
-        email: `emily.davis@${tenant.slug}.com`,
+        email: 'emily.davis@example.com',
         cpf: '12345678904',
       },
       {
         name: 'David Brown',
-        email: `david.brown@${tenant.slug}.com`,
+        email: 'david.brown@example.com',
         cpf: '12345678905',
       },
       {
         name: 'Lisa Anderson',
-        email: `lisa.anderson@${tenant.slug}.com`,
+        email: 'lisa.anderson@example.com',
         cpf: '12345678906',
       },
       {
         name: 'Robert Taylor',
-        email: `robert.taylor@${tenant.slug}.com`,
+        email: 'robert.taylor@example.com',
         cpf: '12345678907',
       },
     ];
@@ -127,7 +90,6 @@ export class SeedService {
       const hashedPassword = await bcrypt.hash('password123', 10);
       const user = this.userRepository.create({
         ...data,
-        tenantId: tenant.id,
         password: hashedPassword,
       });
       const savedUser = await this.userRepository.save(user);
@@ -139,9 +101,16 @@ export class SeedService {
 
   private async createTransactionsForUser(user: User): Promise<Transaction[]> {
     const transactionCount = Math.floor(Math.random() * 6) + 3; // 3-8 transactions
-    const categories = ['Food', 'Transportation', 'Entertainment', 'Utilities', 'Shopping', 'Healthcare', 'Education'];
+    const categories = [
+      'Food',
+      'Transportation',
+      'Entertainment',
+      'Utilities',
+      'Shopping',
+      'Healthcare',
+      'Education',
+    ];
     const statuses = Object.values(TransactionStatus);
-    const types = Object.values(TransactionType);
 
     const transactions: Transaction[] = [];
     for (let i = 0; i < transactionCount; i++) {
@@ -152,7 +121,9 @@ export class SeedService {
       transactionDate.setDate(transactionDate.getDate() - daysAgo);
 
       const transaction = this.transactionRepository.create({
-        title: this.generateTransactionTitle(isIncome ? TransactionType.INCOME : TransactionType.EXPENSE),
+        title: this.generateTransactionTitle(
+          isIncome ? TransactionType.INCOME : TransactionType.EXPENSE,
+        ),
         description: this.generateTransactionDescription(),
         amount: isIncome ? amount : -amount,
         type: isIncome ? TransactionType.INCOME : TransactionType.EXPENSE,
@@ -160,11 +131,11 @@ export class SeedService {
         category: categories[Math.floor(Math.random() * categories.length)],
         transactionDate,
         cpf: user.cpf,
-        tenantId: user.tenantId,
         userId: user.id,
       });
 
-      const savedTransaction = await this.transactionRepository.save(transaction);
+      const savedTransaction =
+        await this.transactionRepository.save(transaction);
       transactions.push(savedTransaction);
     }
 
@@ -195,7 +166,8 @@ export class SeedService {
       'Medical Checkup',
     ];
 
-    const titles = type === TransactionType.INCOME ? incomeTitles : expenseTitles;
+    const titles =
+      type === TransactionType.INCOME ? incomeTitles : expenseTitles;
     return titles[Math.floor(Math.random() * titles.length)];
   }
 

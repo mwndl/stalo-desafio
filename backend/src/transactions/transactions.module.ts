@@ -3,11 +3,12 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { TransactionsController } from './transactions.controller';
 import { TransactionsService } from './transactions.service';
 import { Transaction } from '../entities/transaction.entity';
+import { User } from '../entities/user.entity';
 import { UploadService } from '../common/services/upload.service';
 import { FileAccessGuard } from '../common/guards/file-access.guard';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Transaction])],
+  imports: [TypeOrmModule.forFeature([Transaction, User])],
   controllers: [TransactionsController],
   providers: [TransactionsService, UploadService, FileAccessGuard],
   exports: [TransactionsService],

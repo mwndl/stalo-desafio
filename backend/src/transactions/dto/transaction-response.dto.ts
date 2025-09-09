@@ -80,11 +80,6 @@ export class TransactionResponseDto {
   })
   deletedAt: Date | null;
 
-  @ApiProperty({
-    description: 'ID do tenant',
-    example: '123e4567-e89b-12d3-a456-426614174000',
-  })
-  tenantId: string;
 
   @ApiProperty({
     description: 'ID do usuário',

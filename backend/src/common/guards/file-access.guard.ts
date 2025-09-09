@@ -12,18 +12,18 @@ export class FileAccessGuard implements CanActivate {
     const user = request.user;
     const filename = request.params.filename;
 
-    if (!user?.tenantId) {
-      throw AppException.tenantNotIdentified();
+    if (!user?.id) {
+      throw AppException.userNotFound();
     }
 
-    // O filename agora é a chave completa do MinIO (ex: transactions/tenantId/userId/filename)
+    // O filename agora é a chave completa do MinIO (ex: transactions/userId/filename)
     // Vamos buscar a transação pelo documentPath que contém a chave do MinIO
     try {
       // Buscar transação pelo documentPath (que agora é a chave do MinIO)
       const transaction = await this.transactionsService.repository.findOne({
         where: {
           documentPath: filename, // filename é a chave completa do MinIO
-          tenantId: user.tenantId,
+          userId: user.id,
           deletedAt: IsNull(),
         },
       });

@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Between, IsNull } from 'typeorm';
 import { Transaction, TransactionType, TransactionStatus } from '../entities/transaction.entity';
-import { TenantAwareService } from '../common/services/tenant-aware.service';
+import { User } from '../entities/user.entity';
 import { CreateTransactionDto } from './dto/create-transaction.dto';
 import { AppException } from '../common/exceptions/app.exception';
 import { UpdateTransactionDto } from './dto/update-transaction.dto';
@@ -12,26 +12,34 @@ import { TransactionResponseDto } from './dto/transaction-response.dto';
 import { SortBy, SortOrder } from './dto/sorting.dto';
 
 @Injectable()
-export class TransactionsService extends TenantAwareService<Transaction> {
+export class TransactionsService {
   constructor(
     @InjectRepository(Transaction)
     public readonly repository: Repository<Transaction>,
-  ) {
-    super();
-  }
+    @InjectRepository(User)
+    private readonly userRepository: Repository<User>,
+  ) {}
 
   async create(
     createTransactionDto: CreateTransactionDto, 
-    tenantId: string, 
     userId: string
   ): Promise<TransactionResponseDto> {
+    // Buscar o usuário para obter o CPF automaticamente
+    const user = await this.userRepository.findOne({
+      where: { id: userId }
+    });
+
+    if (!user) {
+      throw AppException.userNotFound();
+    }
+
     const transaction = this.repository.create({
       ...createTransactionDto,
       amount: typeof createTransactionDto.amount === 'string' 
         ? parseFloat(createTransactionDto.amount) 
         : createTransactionDto.amount,
-      tenantId,
       userId,
+      cpf: createTransactionDto.cpf || user.cpf, // Usar CPF fornecido ou do usuário
       transactionDate: new Date(createTransactionDto.transactionDate),
     });
 
@@ -40,7 +48,7 @@ export class TransactionsService extends TenantAwareService<Transaction> {
   }
 
   async findAll(
-    tenantId: string, 
+    userId: string, 
     filters: TransactionFiltersDto = {}, 
     pagination: PaginationDto = {},
     sorting: { sortBy?: string; order?: string } = {}
@@ -51,8 +59,7 @@ export class TransactionsService extends TenantAwareService<Transaction> {
 
     const queryBuilder = this.repository.createQueryBuilder('transaction')
       .leftJoinAndSelect('transaction.user', 'user')
-      .leftJoinAndSelect('transaction.tenant', 'tenant')
-      .where('transaction.tenantId = :tenantId', { tenantId })
+      .where('transaction.userId = :userId', { userId })
       .andWhere('transaction.deletedAt IS NULL');
 
     // Aplicar filtros
@@ -64,9 +71,6 @@ export class TransactionsService extends TenantAwareService<Transaction> {
     }
     if (filters.category) {
       queryBuilder.andWhere('transaction.category = :category', { category: filters.category });
-    }
-    if (filters.userId) {
-      queryBuilder.andWhere('transaction.userId = :userId', { userId: filters.userId });
     }
     if (filters.cpf) {
       queryBuilder.andWhere('user.cpf = :cpf', { cpf: filters.cpf });
@@ -120,14 +124,14 @@ export class TransactionsService extends TenantAwareService<Transaction> {
     };
   }
 
-  async findOne(id: string, tenantId: string): Promise<TransactionResponseDto> {
+  async findOne(id: string, userId: string): Promise<TransactionResponseDto> {
     const transaction = await this.repository.findOne({
       where: { 
         id, 
-        tenantId,
+        userId,
         deletedAt: IsNull(),
       },
-      relations: ['user', 'tenant'],
+      relations: ['user'],
     });
 
     if (!transaction) {
@@ -140,13 +144,11 @@ export class TransactionsService extends TenantAwareService<Transaction> {
   async update(
     id: string, 
     updateTransactionDto: UpdateTransactionDto, 
-    tenantId: string,
     userId: string
   ): Promise<TransactionResponseDto> {
     const transaction = await this.repository.findOne({
       where: { 
         id, 
-        tenantId,
         userId,
         deletedAt: IsNull(),
       },
@@ -156,8 +158,8 @@ export class TransactionsService extends TenantAwareService<Transaction> {
       throw AppException.transactionNotFound();
     }
 
-    // Garantir que o tenantId e userId não sejam alterados
-    const { tenantId: _, userId: __, ...safeUpdateData } = updateTransactionDto as any;
+    // Garantir que o userId não seja alterado
+    const { userId: _, ...safeUpdateData } = updateTransactionDto as any;
     
     // Converter transactionDate se fornecido
     if (safeUpdateData.transactionDate) {
@@ -167,18 +169,17 @@ export class TransactionsService extends TenantAwareService<Transaction> {
     await this.repository.update(id, safeUpdateData);
     
     const updatedTransaction = await this.repository.findOne({
-      where: { id, tenantId },
-      relations: ['user', 'tenant'],
+      where: { id, userId },
+      relations: ['user'],
     });
 
     return this.mapToResponseDto(updatedTransaction!);
   }
 
-  async remove(id: string, tenantId: string, userId: string): Promise<{ message: string }> {
+  async remove(id: string, userId: string): Promise<{ message: string }> {
     const transaction = await this.repository.findOne({
       where: { 
         id, 
-        tenantId,
         userId,
         deletedAt: IsNull(),
       },
@@ -194,19 +195,15 @@ export class TransactionsService extends TenantAwareService<Transaction> {
     return { message: 'Transação excluída com sucesso' };
   }
 
-  async getSummary(tenantId: string, userId?: string): Promise<{
+  async getSummary(userId: string): Promise<{
     totalIncome: number;
     totalExpense: number;
     balance: number;
     transactionCount: number;
   }> {
     const queryBuilder = this.repository.createQueryBuilder('transaction')
-      .where('transaction.tenantId = :tenantId', { tenantId })
+      .where('transaction.userId = :userId', { userId })
       .andWhere('transaction.deletedAt IS NULL');
-
-    if (userId) {
-      queryBuilder.andWhere('transaction.userId = :userId', { userId });
-    }
 
     const transactions = await queryBuilder.getMany();
 
@@ -253,7 +250,6 @@ export class TransactionsService extends TenantAwareService<Transaction> {
       createdAt: transaction.createdAt,
       updatedAt: transaction.updatedAt,
       deletedAt: transaction.deletedAt,
-      tenantId: transaction.tenantId,
       userId: transaction.userId,
       documentPath: transaction.documentPath,
     };

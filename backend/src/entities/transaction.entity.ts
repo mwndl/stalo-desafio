@@ -1,5 +1,4 @@
 import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, ManyToOne, JoinColumn } from 'typeorm';
-import { Tenant } from './tenant.entity';
 import { User } from './user.entity';
 
 export enum TransactionType {
@@ -61,12 +60,6 @@ export class Transaction {
   @Column({ nullable: true })
   deletedAt: Date;
 
-  @ManyToOne(() => Tenant, tenant => tenant.transactions)
-  @JoinColumn({ name: 'tenantId' })
-  tenant: Tenant;
-
-  @Column()
-  tenantId: string;
 
   @ManyToOne(() => User, user => user.transactions)
   @JoinColumn({ name: 'userId' })
