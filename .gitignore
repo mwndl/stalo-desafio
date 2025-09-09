@@ -5,6 +5,9 @@ yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 
+# PNPM
+.pnpm-store/
+
 # Environment variables
 .env
 .env.local
@@ -97,3 +100,12 @@ public
 # Temporary folders
 tmp/
 temp/
+
+# Library files
+*.lib
+*.a
+*.so
+*.dll
+*.dylib
+*.libs/
+libs/
