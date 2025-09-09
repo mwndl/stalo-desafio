@@ -25,7 +25,7 @@ export class TransactionSeedService {
     // Buscar transações existentes do usuário
     const existingTransactions = await this.transactionRepository.find({
       where: { userId },
-      select: ['title', 'amount', 'type', 'category', 'transactionDate']
+      select: ['title', 'amount', 'type', 'transactionDate']
     });
 
     // Gerar pool de transações possíveis
@@ -36,8 +36,7 @@ export class TransactionSeedService {
       !existingTransactions.some(existing => 
         existing.title === possible.title && 
         existing.amount === possible.amount &&
-        existing.type === possible.type &&
-        existing.category === possible.category
+        existing.type === possible.type
       )
     );
 

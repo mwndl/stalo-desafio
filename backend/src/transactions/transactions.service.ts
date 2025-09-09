@@ -48,10 +48,10 @@ export class TransactionsService {
   }
 
   async findAll(
-    userId: string, 
     filters: TransactionFiltersDto = {}, 
     pagination: PaginationDto = {},
-    sorting: { sortBy?: string; order?: string } = {}
+    sorting: { sortBy?: string; order?: string } = {},
+    userId?: string
   ): Promise<PaginatedResponseDto<TransactionResponseDto>> {
     const { page = 1, limit = 10 } = pagination;
     const { sortBy = 'createdAt', order = 'desc' } = sorting;
@@ -59,8 +59,12 @@ export class TransactionsService {
 
     const queryBuilder = this.repository.createQueryBuilder('transaction')
       .leftJoinAndSelect('transaction.user', 'user')
-      .where('transaction.userId = :userId', { userId })
-      .andWhere('transaction.deletedAt IS NULL');
+      .where('transaction.deletedAt IS NULL');
+
+    // Filtrar por usuário se userId for fornecido
+    if (userId) {
+      queryBuilder.andWhere('transaction.userId = :userId', { userId });
+    }
 
     // Aplicar filtros
     if (filters.type) {
@@ -253,7 +257,7 @@ export class TransactionsService {
   }
 
   async updateDocumentPath(transactionId: string, userId: string, documentPath: string): Promise<void> {
-    const transaction = await this.transactionRepository.findOne({
+    const transaction = await this.repository.findOne({
       where: { id: transactionId, userId },
     });
 
@@ -262,11 +266,11 @@ export class TransactionsService {
     }
 
     transaction.documentPath = documentPath;
-    await this.transactionRepository.save(transaction);
+    await this.repository.save(transaction);
   }
 
   async removeDocument(transactionId: string, userId: string): Promise<{ message: string }> {
-    const transaction = await this.transactionRepository.findOne({
+    const transaction = await this.repository.findOne({
       where: { id: transactionId, userId },
     });
 
@@ -274,8 +278,8 @@ export class TransactionsService {
       throw new Error('Transação não encontrada');
     }
 
-    transaction.documentPath = null;
-    await this.transactionRepository.save(transaction);
+    transaction.documentPath = undefined;
+    await this.repository.save(transaction);
 
     return { message: 'Documento removido com sucesso' };
   }

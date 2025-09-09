@@ -22,6 +22,7 @@ import {
   ApiBearerAuth,
   ApiQuery,
   ApiConsumes,
+  ApiBody,
 } from '@nestjs/swagger';
 import { FileInterceptor } from '@nestjs/platform-express';
 import * as multer from 'multer';
@@ -120,7 +121,6 @@ export class TransactionsController {
   })
   @ApiQuery({ name: 'type', enum: TransactionType, required: false })
   @ApiQuery({ name: 'status', enum: TransactionStatus, required: false })
-  @ApiQuery({ name: 'userId', required: false })
   @ApiQuery({
     name: 'cpf',
     required: false,
@@ -182,10 +182,10 @@ export class TransactionsController {
     const { page, limit, sortBy, order, ...filters } = query;
     const user: User = req.user;
     return this.transactionsService.findAll(
-      user.id,
       filters,
       { page, limit },
       { sortBy, order },
+      user.id,
     );
   }
 
